@@ -1,0 +1,19 @@
+{
+  "name": "collabflow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CollabFlow — Smart Project & Task Collaboration System",
+  "author": "Md Shah Jalal <shah.jalal.ju.bd@gmail.com>",
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "dev:api": "pnpm --filter @collabflow/api start:dev",
+    "dev:web": "pnpm --filter @collabflow/web dev",
+    "build": "pnpm -r build",
+    "seed": "pnpm --filter @collabflow/api seed",
+    "test": "pnpm -r test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@11.1.3"
+}

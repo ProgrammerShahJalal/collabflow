@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+*.env
+!.env.example
+
+# Uploads (local file storage)
+uploads/
+
+# TanStack Router generated tree
+apps/web/src/routeTree.gen.ts
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+coverage/
+playwright-report/
+test-results/
