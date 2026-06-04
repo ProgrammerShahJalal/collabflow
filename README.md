@@ -71,7 +71,7 @@ pnpm install
 cp .env.example apps/api/.env    # then set MONGODB_URI and the JWT secrets
 cp .env.example apps/web/.env    # web only needs the VITE_* lines
 
-# 3. Seed the demo admin user (first run only)
+# 3. Seed the demo users — Admin, Project Manager, Team Member (first run only)
 pnpm seed
 
 # 4. Run both apps in parallel
@@ -137,16 +137,17 @@ relevant block into `apps/api/.env` and `apps/web/.env`.
 
 ## Demo credentials
 
-Created by `pnpm seed` (override via `DEMO_ADMIN_*` before seeding):
+`pnpm seed` creates one user per role, all sharing the same password
+(`DEMO_ADMIN_PASSWORD`, default `Demo@1234`). Emails are overridable via the
+`DEMO_*_EMAIL` variables before seeding.
 
-```
-Email:    admin@collabflow.dev
-Password: Demo@1234
-Role:     Admin
-```
+| Role            | Email                    | Password    |
+| --------------- | ------------------------ | ----------- |
+| Admin           | `admin@collabflow.dev`   | `Demo@1234` |
+| Project Manager | `manager@collabflow.dev` | `Demo@1234` |
+| Team Member     | `member@collabflow.dev`  | `Demo@1234` |
 
-Use the **Sign up** page to create additional Project Manager / Team Member
-accounts.
+You can also use the **Sign up** page to create additional accounts.
 
 ---
 
