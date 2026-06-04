@@ -17,6 +17,11 @@ export class AnalyticsController {
     return this.analyticsService.dashboard(user);
   }
 
+  @Get('projects')
+  projectSummaries(@CurrentUser() user: User) {
+    return this.analyticsService.projectSummaries(user);
+  }
+
   @Get('workload')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
   @UseGuards(RolesGuard)

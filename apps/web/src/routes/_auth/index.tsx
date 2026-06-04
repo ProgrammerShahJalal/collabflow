@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   Cell,
   Legend,
@@ -14,8 +14,12 @@ import {
   Clock,
   AlertTriangle,
 } from 'lucide-react';
-import { useDashboard } from '@/features/dashboard/dashboard.api';
-import { Card, Spinner } from '@/components/ui';
+import {
+  useDashboard,
+  useProjectSummaries,
+} from '@/features/dashboard/dashboard.api';
+import { Badge, Card, EmptyState, Spinner } from '@/components/ui';
+import { fromNow } from '@/lib/utils';
 
 export const Route = createFileRoute('/_auth/')({
   component: DashboardPage,
@@ -60,33 +64,101 @@ function DashboardPage() {
         ))}
       </div>
 
-      <Card className="max-w-lg">
-        <h2 className="mb-4 text-lg font-semibold">Task Status Distribution</h2>
-        {hasTasks ? (
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie
-                data={chartData}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={2}
-              >
-                {chartData.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        ) : (
-          <p className="py-10 text-center text-sm text-slate-400">
-            No tasks yet. Create a project and add tasks to see analytics.
-          </p>
-        )}
-      </Card>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <h2 className="mb-4 text-lg font-semibold">Task Status Distribution</h2>
+          {hasTasks ? (
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={2}
+                >
+                  {chartData.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="py-10 text-center text-sm text-slate-400">
+              No tasks yet. Create a project and add tasks to see analytics.
+            </p>
+          )}
+        </Card>
+
+        <ProjectSummary />
+      </div>
     </div>
   );
+}
+
+function ProjectSummary() {
+  const { data, isLoading } = useProjectSummaries();
+
+  return (
+    <Card>
+      <h2 className="mb-4 text-lg font-semibold">Project Summary</h2>
+      {isLoading || !data ? (
+        <Spinner />
+      ) : data.length === 0 ? (
+        <EmptyState
+          title="No projects yet"
+          hint="Create a project to track its progress here."
+        />
+      ) : (
+        <ul className="space-y-4">
+          {data.map((p) => (
+            <li key={p.id}>
+              <Link
+                to="/projects/$id"
+                params={{ id: p.id }}
+                className="block rounded-lg p-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate font-medium">{p.name}</span>
+                  <Badge value={p.status} />
+                </div>
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                  <div
+                    className="h-full rounded-full bg-green-500"
+                    style={{ width: `${p.completionPct}%` }}
+                  />
+                </div>
+                <div className="mt-1.5 flex items-center justify-between text-xs text-slate-500">
+                  <span>{summaryLine(p)}</span>
+                  {p.deadline && (
+                    <span
+                      className={
+                        p.overdueTasks > 0 ? 'text-red-600' : 'text-slate-400'
+                      }
+                    >
+                      Deadline {fromNow(p.deadline)}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+function summaryLine(p: {
+  totalTasks: number;
+  pendingTasks: number;
+  completionPct: number;
+}): string {
+  if (p.totalTasks === 0) return 'No tasks yet';
+  if (p.pendingTasks === 0) return '100% completed';
+  if (p.completionPct > 0) return `${p.completionPct}% completed`;
+  return `${p.pendingTasks} task${p.pendingTasks === 1 ? '' : 's'} pending`;
 }

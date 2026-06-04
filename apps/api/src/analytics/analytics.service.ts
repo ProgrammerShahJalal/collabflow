@@ -64,6 +64,61 @@ export class AnalyticsService {
   }
 
   /**
+   * Per-project progress summary: task counts and completion percentage for
+   * each project the user can see. Powers the dashboard's "Project Summary"
+   * section (e.g. "Website Redesign — 5 tasks pending", "Mobile App — 80%").
+   * Scoped by role like {@link dashboard}: elevated users see every project,
+   * others only the ones they're a member of.
+   */
+  async projectSummaries(user: User) {
+    const projectFilter: Record<string, unknown> = this.isElevated(user)
+      ? {}
+      : { members: user._id };
+
+    const projects = await this.em.find(Project, projectFilter, {
+      orderBy: { deadline: 1, name: 1 },
+    });
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    return Promise.all(
+      projects.map(async (project) => {
+        const scope = { project: project._id };
+        const [totalTasks, completedTasks, pendingTasks, overdueTasks] =
+          await Promise.all([
+            this.em.count(Task, scope),
+            this.em.count(Task, { ...scope, status: TaskStatus.COMPLETED }),
+            this.em.count(Task, {
+              ...scope,
+              status: { $in: [TaskStatus.TODO, TaskStatus.IN_PROGRESS] },
+            }),
+            this.em.count(Task, {
+              ...scope,
+              dueDate: { $lt: startOfToday },
+              status: { $ne: TaskStatus.COMPLETED },
+            }),
+          ]);
+
+        return {
+          id: project.id,
+          name: project.name,
+          status: project.status,
+          deadline: project.deadline ? project.deadline.toISOString() : null,
+          totalTasks,
+          completedTasks,
+          pendingTasks,
+          overdueTasks,
+          completionPct:
+            totalTasks === 0
+              ? 0
+              : Math.round((completedTasks / totalTasks) * 100),
+        };
+      }),
+    );
+  }
+
+  /**
    * Per-member workload summary: total / completed / pending task counts for
    * each active user. Restricted to Admin/PM at the controller layer; mirrors
    * the team roster (all active members) so the two views stay consistent.

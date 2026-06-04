@@ -78,3 +78,15 @@ export interface WorkloadRow {
   completedTasks: number;
   pendingTasks: number;
 }
+
+export interface ProjectSummaryRow {
+  id: string;
+  name: string;
+  status: ProjectStatus;
+  deadline?: string | null;
+  totalTasks: number;
+  completedTasks: number;
+  pendingTasks: number;
+  overdueTasks: number;
+  completionPct: number;
+}

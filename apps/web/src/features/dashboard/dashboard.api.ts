@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { WorkloadRow } from '@collabflow/shared';
+import type { ProjectSummaryRow, WorkloadRow } from '@collabflow/shared';
 import { api } from '@/lib/api';
 import { keys } from '@/lib/query-keys';
 
@@ -17,6 +17,16 @@ export function useDashboard() {
     queryKey: keys.dashboard(),
     queryFn: async () => {
       const { data } = await api.get<DashboardData>('/analytics/dashboard');
+      return data;
+    },
+  });
+}
+
+export function useProjectSummaries() {
+  return useQuery({
+    queryKey: keys.projectSummaries(),
+    queryFn: async () => {
+      const { data } = await api.get<ProjectSummaryRow[]>('/analytics/projects');
       return data;
     },
   });
