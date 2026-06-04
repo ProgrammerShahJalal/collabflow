@@ -15,8 +15,12 @@ export const Route = createFileRoute('/login')({
   component: LoginPage,
 });
 
-const DEMO_EMAIL = 'admin@collabflow.dev';
 const DEMO_PASSWORD = 'Demo@1234';
+const DEMO_ACCOUNTS = [
+  { label: 'Admin', email: 'admin@collabflow.dev' },
+  { label: 'Project Manager', email: 'manager@collabflow.dev' },
+  { label: 'Team Member', email: 'member@collabflow.dev' },
+] as const;
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -74,14 +78,24 @@ function LoginPage() {
           </Button>
         </form>
 
-        <Button
-          variant="outline"
-          className="mt-3 w-full"
-          onClick={(e) => submit(e, { email: DEMO_EMAIL, password: DEMO_PASSWORD })}
-          loading={login.isPending}
-        >
-          Try Demo Login
-        </Button>
+        <div className="mt-4">
+          <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-slate-400">
+            Try a demo account
+          </p>
+          <div className="space-y-2">
+            {DEMO_ACCOUNTS.map((account) => (
+              <Button
+                key={account.email}
+                variant="outline"
+                className="w-full"
+                onClick={(e) => submit(e, { email: account.email, password: DEMO_PASSWORD })}
+                loading={login.isPending}
+              >
+                Demo Login as {account.label}
+              </Button>
+            ))}
+          </div>
+        </div>
 
         <p className="mt-4 text-center text-sm text-slate-500">
           No account?{' '}

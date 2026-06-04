@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import type { AuthResponse, UserDto } from '@collabflow/shared';
 import { api } from '@/lib/api';
 import { keys } from '@/lib/query-keys';
+import { queryClient } from '@/lib/query-client';
 import { useAuthStore } from '@/stores/auth.store';
 
 interface LoginInput {
@@ -19,7 +20,12 @@ export function useLogin() {
       const { data } = await api.post<AuthResponse>('/auth/login', input);
       return data;
     },
-    onSuccess: (data) => setSession(data.accessToken, data.user),
+    onSuccess: (data) => {
+      // Drop any data cached for the previous account before establishing
+      // the new session so role-scoped queries can't bleed across users.
+      queryClient.clear();
+      setSession(data.accessToken, data.user);
+    },
   });
 }
 
@@ -30,7 +36,10 @@ export function useSignup() {
       const { data } = await api.post<AuthResponse>('/auth/signup', input);
       return data;
     },
-    onSuccess: (data) => setSession(data.accessToken, data.user),
+    onSuccess: (data) => {
+      queryClient.clear();
+      setSession(data.accessToken, data.user);
+    },
   });
 }
 
@@ -40,7 +49,10 @@ export function useLogout() {
     mutationFn: async () => {
       await api.post('/auth/logout').catch(() => undefined);
     },
-    onSettled: () => clear(),
+    onSettled: () => {
+      clear();
+      queryClient.clear();
+    },
   });
 }
 
