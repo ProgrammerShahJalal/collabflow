@@ -195,5 +195,10 @@ pnpm build
 - CORS, cookie security, and refresh-token rotation rely on the API and web
   origins being configured consistently via `ALLOWED_ORIGINS` /
   `VITE_API_BASE_URL`.
-</content>
-</invoke>
+
+---
+
+## Author
+
+**Md Shah Jalal**
+[shah.jalal.ju.bd@gmail.com](mailto:shah.jalal.ju.bd@gmail.com)
