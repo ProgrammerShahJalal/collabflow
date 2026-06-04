@@ -118,8 +118,10 @@ relevant block into `apps/api/.env` and `apps/web/.env`.
 | `ALLOWED_ORIGINS`        | Comma-separated CORS allow-list                     | `http://localhost:5173`          |
 | `UPLOAD_DEST`            | Directory for uploaded attachments                  | `./uploads`                      |
 | `MAX_FILE_SIZE_MB`       | Per-file upload size limit                          | `10`                             |
-| `DEMO_ADMIN_EMAIL`       | Email created by the seed script                    | `admin@collabflow.dev`           |
-| `DEMO_ADMIN_PASSWORD`    | Password created by the seed script                 | `Demo@1234`                      |
+| `DEMO_ADMIN_EMAIL`       | Email for the seeded Admin user                     | `admin@collabflow.dev`           |
+| `DEMO_MANAGER_EMAIL`     | Email for the seeded Project Manager user           | `manager@collabflow.dev`         |
+| `DEMO_MEMBER_EMAIL`      | Email for the seeded Team Member user               | `member@collabflow.dev`          |
+| `DEMO_ADMIN_PASSWORD`    | Shared password for all seeded demo users           | `Demo@1234`                      |
 
 ### Web (`apps/web/.env`)
 
