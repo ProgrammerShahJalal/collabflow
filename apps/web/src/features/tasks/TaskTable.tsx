@@ -9,7 +9,7 @@ import {
 import { useMemo, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Loader2, Pencil, Trash2 } from 'lucide-react';
 import type { TaskDto } from '@collabflow/shared';
 import { Badge, Modal, Select } from '@/components/ui';
 import { cn, formatDate, isOverdue } from '@/lib/utils';
@@ -22,19 +22,42 @@ import { EditTaskForm } from './EditTaskForm';
 
 function StatusDropdown({ task }: { task: TaskDto }) {
   const updateStatus = useUpdateTaskStatus();
+  const isUpdating = updateStatus.isPending;
+
+  const handleChange = (status: string) => {
+    if (status === task.status) return;
+    updateStatus.mutate(
+      { id: task.id, status },
+      { onError: (err) => toast.error(apiErrorMessage(err)) },
+    );
+  };
+
   return (
-    <Select
-      value={task.status}
+    <div
+      className="inline-flex items-center gap-2"
       onClick={(e) => e.stopPropagation()}
-      onChange={(e) =>
-        updateStatus.mutate({ id: task.id, status: e.target.value })
-      }
-      className="py-1 text-xs"
     >
-      <option value="todo">To Do</option>
-      <option value="in_progress">In Progress</option>
-      <option value="completed">Completed</option>
-    </Select>
+      <Select
+        // While updating, show the value the user picked, not the stale one.
+        value={isUpdating ? (updateStatus.variables?.status ?? task.status) : task.status}
+        disabled={isUpdating}
+        onChange={(e) => handleChange(e.target.value)}
+        className={cn(
+          'py-1 text-xs transition-opacity',
+          isUpdating && 'opacity-60',
+        )}
+      >
+        <option value="todo">To Do</option>
+        <option value="in_progress">In Progress</option>
+        <option value="completed">Completed</option>
+      </Select>
+      {isUpdating && (
+        <Loader2
+          className="h-4 w-4 shrink-0 animate-spin text-indigo-500"
+          aria-label="Updating status"
+        />
+      )}
+    </div>
   );
 }
 
