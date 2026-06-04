@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { TaskDto } from '@collabflow/shared';
-import { useUpdateTask } from './tasks.api';
+import { useUpdateTask, useUploadFiles } from './tasks.api';
+import { AttachmentField } from './AttachmentField';
 import { useProject } from '@/features/projects/projects.api';
 import { apiErrorMessage } from '@/lib/api';
 import {
@@ -23,6 +24,7 @@ export function EditTaskForm({
   const projectId =
     typeof task.project === 'string' ? task.project : task.project.id;
   const update = useUpdateTask(task.id);
+  const uploadFiles = useUploadFiles();
   const { data: project } = useProject(projectId);
 
   const [title, setTitle] = useState(task.title);
@@ -33,6 +35,8 @@ export function EditTaskForm({
   const [priority, setPriority] = useState<string>(task.priority);
   const [status, setStatus] = useState<string>(task.status);
   const [assigneeId, setAssigneeId] = useState(task.assignee?.id ?? '');
+  const [existing, setExisting] = useState<string[]>(task.attachments ?? []);
+  const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string>();
 
   // Ensure the current assignee is selectable even before members load.
@@ -48,6 +52,9 @@ export function EditTaskForm({
     e.preventDefault();
     setError(undefined);
     try {
+      const uploaded = files.length
+        ? (await uploadFiles.mutateAsync(files)).map((f) => f.url)
+        : [];
       await update.mutateAsync({
         title: title.trim(),
         description: description.trim() || undefined,
@@ -55,13 +62,18 @@ export function EditTaskForm({
         priority,
         status,
         assigneeId: assigneeId || null,
+        attachments: [...existing, ...uploaded],
       });
       toast.success('Task updated');
+      setExisting([...existing, ...uploaded]);
+      setFiles([]);
       onSuccess?.();
     } catch (err) {
       setError(apiErrorMessage(err));
     }
   };
+
+  const busy = uploadFiles.isPending || update.isPending;
 
   return (
     <form onSubmit={submit} className="space-y-3">
@@ -139,9 +151,18 @@ export function EditTaskForm({
           </Select>
         </div>
       </div>
+      <AttachmentField
+        existing={existing}
+        onRemoveExisting={(url) =>
+          setExisting((prev) => prev.filter((u) => u !== url))
+        }
+        files={files}
+        onFilesChange={setFiles}
+        disabled={busy}
+      />
       <FieldError message={error} />
       <div className="flex justify-end gap-2 pt-1">
-        <Button type="submit" loading={update.isPending}>
+        <Button type="submit" loading={busy}>
           Save Changes
         </Button>
       </div>

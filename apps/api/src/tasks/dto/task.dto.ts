@@ -54,6 +54,13 @@ export class CreateTaskDto {
   @IsOptional()
   @IsString()
   assigneeId?: string;
+
+  @ApiPropertyOptional({ type: [String], description: 'Attachment URLs' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  attachments?: string[];
 }
 
 export class UpdateTaskDto {
@@ -89,6 +96,13 @@ export class UpdateTaskDto {
   @IsOptional()
   @IsString()
   assigneeId?: string | null;
+
+  @ApiPropertyOptional({ type: [String], description: 'Attachment URLs' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  attachments?: string[];
 }
 
 export class UpdateTaskStatusDto {

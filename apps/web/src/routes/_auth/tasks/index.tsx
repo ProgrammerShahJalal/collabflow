@@ -106,7 +106,7 @@ function AllTasksPage() {
           onChange={(e) => setDeadlineStatus(e.target.value)}
         >
           <option value="">Any deadline</option>
-          <option value="upcoming">Due soon</option>
+          <option value="upcoming">Upcoming</option>
           <option value="overdue">Overdue</option>
         </Select>
         <Select value={projectId} onChange={(e) => setProjectId(e.target.value)}>

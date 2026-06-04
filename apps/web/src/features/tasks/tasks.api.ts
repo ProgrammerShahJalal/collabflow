@@ -51,6 +51,25 @@ export interface CreateTaskInput {
   priority?: string;
   projectId: string;
   assigneeId?: string;
+  attachments?: string[];
+}
+
+export interface UploadedFile {
+  url: string;
+  name: string;
+  size: number;
+}
+
+/** Upload one or more files and return their public URLs + metadata. */
+export function useUploadFiles() {
+  return useMutation({
+    mutationFn: async (files: File[]) => {
+      const form = new FormData();
+      files.forEach((f) => form.append('files', f));
+      const { data } = await api.post<UploadedFile[]>('/uploads', form);
+      return data;
+    },
+  });
 }
 
 export function useCreateTask() {

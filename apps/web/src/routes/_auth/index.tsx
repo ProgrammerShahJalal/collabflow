@@ -151,7 +151,7 @@ function DashboardPage() {
           icon={CalendarClock}
           iconColor="text-amber-600"
           query={useUpcomingDeadlines}
-          emptyTitle="Nothing due soon"
+          emptyTitle="Nothing upcoming"
           emptyHint="Tasks due within the next 7 days will appear here."
           viewAllSearch={{ deadlineStatus: 'upcoming' }}
         />

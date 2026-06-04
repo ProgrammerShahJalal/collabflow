@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import type { UserDto } from '@collabflow/shared';
-import { useCreateTask } from './tasks.api';
+import { useCreateTask, useUploadFiles } from './tasks.api';
+import { AttachmentField } from './AttachmentField';
 import { apiErrorMessage } from '@/lib/api';
 import {
   Button,
@@ -22,17 +23,22 @@ export function CreateTaskForm({
   onSuccess?: () => void;
 }) {
   const createTask = useCreateTask();
+  const uploadFiles = useUploadFiles();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState('medium');
   const [assigneeId, setAssigneeId] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string>();
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(undefined);
     try {
+      const attachments = files.length
+        ? (await uploadFiles.mutateAsync(files)).map((f) => f.url)
+        : undefined;
       await createTask.mutateAsync({
         projectId,
         title: title.trim(),
@@ -40,6 +46,7 @@ export function CreateTaskForm({
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
         priority,
         assigneeId: assigneeId || undefined,
+        attachments,
       });
       toast.success('Task created');
       setTitle('');
@@ -47,11 +54,14 @@ export function CreateTaskForm({
       setDueDate('');
       setPriority('medium');
       setAssigneeId('');
+      setFiles([]);
       onSuccess?.();
     } catch (err) {
       setError(apiErrorMessage(err));
     }
   };
+
+  const busy = uploadFiles.isPending || createTask.isPending;
 
   return (
     <form onSubmit={submit} className="space-y-3">
@@ -115,8 +125,9 @@ export function CreateTaskForm({
           ))}
         </Select>
       </div>
+      <AttachmentField files={files} onFilesChange={setFiles} disabled={busy} />
       <FieldError message={error} />
-      <Button type="submit" loading={createTask.isPending}>
+      <Button type="submit" loading={busy}>
         Add Task
       </Button>
     </form>

@@ -115,7 +115,7 @@ export class TasksService {
       project,
       assignee,
       createdBy: user,
-      attachments: [],
+      attachments: dto.attachments ?? [],
     });
 
     await this.em.persistAndFlush(task);
@@ -236,6 +236,7 @@ export class TasksService {
     if (dto.description !== undefined) task.description = dto.description;
     if (dto.priority !== undefined) task.priority = dto.priority;
     if (dto.status !== undefined) task.status = dto.status;
+    if (dto.attachments !== undefined) task.attachments = dto.attachments;
     if (dto.dueDate !== undefined) {
       task.dueDate = dto.dueDate ? new Date(dto.dueDate) : undefined;
     }
