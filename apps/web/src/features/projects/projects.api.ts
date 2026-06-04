@@ -53,7 +53,10 @@ export function useCreateProject() {
       const { data } = await api.post<ProjectDto>('/projects', input);
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['projects'] });
+      qc.invalidateQueries({ queryKey: ['analytics'] });
+    },
   });
 }
 
@@ -76,7 +79,10 @@ export function useDeleteProject() {
     mutationFn: async (id: string) => {
       await api.delete(`/projects/${id}`);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['projects'] });
+      qc.invalidateQueries({ queryKey: ['analytics'] });
+    },
   });
 }
 

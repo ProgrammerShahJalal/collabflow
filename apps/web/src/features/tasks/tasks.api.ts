@@ -60,20 +60,28 @@ export function useCreateTask() {
       const { data } = await api.post<TaskDto>('/tasks', input);
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['analytics'] });
+    },
   });
 }
 
 export function useUpdateTask(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: Partial<CreateTaskInput> & { assigneeId?: string | null }) => {
+    mutationFn: async (
+      input: Partial<Omit<CreateTaskInput, 'assigneeId'>> & {
+        assigneeId?: string | null;
+      },
+    ) => {
       const { data } = await api.patch<TaskDto>(`/tasks/${id}`, input);
       return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tasks'] });
       qc.invalidateQueries({ queryKey: keys.task(id) });
+      qc.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
 }
@@ -90,6 +98,7 @@ export function useUpdateTaskStatus() {
     onSuccess: (task) => {
       qc.invalidateQueries({ queryKey: ['tasks'] });
       qc.invalidateQueries({ queryKey: keys.task(task.id) });
+      qc.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
 }
@@ -100,6 +109,9 @@ export function useDeleteTask() {
     mutationFn: async (id: string) => {
       await api.delete(`/tasks/${id}`);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['analytics'] });
+    },
   });
 }
