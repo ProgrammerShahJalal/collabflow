@@ -22,6 +22,8 @@ function TaskDetailPage() {
   const isElevated = user?.role === 'admin' || user?.role === 'project_manager';
   const isAssignee = task.assignee?.id === user?.id;
   const canEdit = isElevated || isAssignee;
+  // Priority is an Admin/PM-only field; assignees may only change status.
+  const canEditPriority = isElevated;
 
   const patch = async (field: string, value: string) => {
     try {
@@ -106,7 +108,7 @@ function TaskDetailPage() {
             <div>
               <dt className="mb-1 text-xs uppercase text-slate-400">Priority</dt>
               <dd>
-                {canEdit ? (
+                {canEditPriority ? (
                   <Select
                     className="w-full"
                     value={task.priority}

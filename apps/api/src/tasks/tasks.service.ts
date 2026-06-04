@@ -173,6 +173,18 @@ export class TasksService {
     const task = await this.findOne(id, user);
     this.assertCanModify(task, user);
 
+    // Rule: only Admin/PM may change priority. Team members may update their
+    // assigned tasks (e.g. status) but not re-prioritise them.
+    if (
+      dto.priority !== undefined &&
+      dto.priority !== task.priority &&
+      !this.isElevated(user)
+    ) {
+      throw new ForbiddenException(
+        'Only Admin or Project Manager can change task priority.',
+      );
+    }
+
     // Rule 4: completed tasks cannot be reassigned.
     if (
       task.status === TaskStatus.COMPLETED &&
