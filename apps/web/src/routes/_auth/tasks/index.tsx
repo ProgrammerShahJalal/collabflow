@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { Search } from 'lucide-react';
 import { useTasks } from '@/features/tasks/tasks.api';
+import { useProjects } from '@/features/projects/projects.api';
 import { TaskTable } from '@/features/tasks/TaskTable';
 import { EmptyState, Input, Select, Spinner } from '@/components/ui';
 
@@ -13,11 +14,15 @@ function AllTasksPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [priority, setPriority] = useState('');
+  const [projectId, setProjectId] = useState('');
+
+  const { data: projects } = useProjects({ limit: 100 });
 
   const { data, isLoading } = useTasks({
     search: search || undefined,
     status: status || undefined,
     priority: priority || undefined,
+    projectId: projectId || undefined,
     limit: 100,
   });
 
@@ -46,6 +51,14 @@ function AllTasksPage() {
           <option value="high">High</option>
           <option value="medium">Medium</option>
           <option value="low">Low</option>
+        </Select>
+        <Select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+          <option value="">All projects</option>
+          {projects?.data.map((project) => (
+            <option key={project.id} value={project.id}>
+              {project.name}
+            </option>
+          ))}
         </Select>
       </div>
 
