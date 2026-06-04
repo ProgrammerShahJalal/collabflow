@@ -17,23 +17,136 @@ typed contract package.
 
 ## Features
 
-- **Authentication & RBAC** — signup, login, token refresh, logout, and `me`.
-  Short-lived JWT access tokens (15m) plus rotating, hashed refresh tokens (7d,
-  stored in an HttpOnly cookie). Three roles: **Admin**, **Project Manager**,
-  and **Team Member**, enforced by route guards.
-- **Projects** — full CRUD with status (`active` / `completed` / `on_hold`),
-  member management (add/remove), and business-rule validation.
-- **Tasks** — full CRUD with status (`todo` / `in_progress` / `completed`),
-  priority (`high` / `medium` / `low`), assignment, dedicated status-change
-  endpoint, and **bulk actions** (bulk status update and delete).
-- **File attachments** — upload images and common document formats (PDF, Office,
-  CSV, ZIP, …) on tasks, validated by MIME type and size, served statically.
-- **Activity feed** — chronological, paginated log of project/task/member events
-  (created, updated, assigned, status changed, deleted, member added/removed).
-- **Analytics** — dashboard summary plus per-project stats, progress trend,
-  upcoming deadlines, high-priority tasks, and team workload, rendered with
-  Recharts.
-- **API docs** — interactive Swagger UI generated from the controllers.
+CollabFlow ships a complete project-collaboration workflow end to end —
+authentication, role-based access, projects, tasks, threaded comments, an
+in-app notification inbox, an audit feed, analytics, and file attachments —
+exposed through a documented REST API and a polished React SPA. Every feature
+is listed below.
+
+### Authentication & security
+
+| Feature | Details |
+| ------- | ------- |
+| Signup / login / logout | Email + password auth (`/auth/signup`, `/auth/login`, `/auth/logout`) with input validation. |
+| Current user (`me`) | `GET /auth/me` returns the authenticated profile and rehydrates the SPA on reload. |
+| JWT access tokens | Short-lived (15m, configurable) HS256 access tokens; payload carries `sub`, `email`, `role`. |
+| Rotating refresh tokens | 7-day refresh token stored hashed per user in an **HttpOnly, SameSite=strict** cookie; rotated on every `/auth/refresh`, preventing replay. Web client auto-refreshes on 401. |
+| Password hashing | bcryptjs with 12 salt rounds; password & refresh hashes never serialized. |
+| Account state | `isActive` flag gates login; `lastLoginAt` recorded on each login. |
+
+### Roles & access control (RBAC)
+
+| Feature | Details |
+| ------- | ------- |
+| Three roles | **Admin**, **Project Manager**, **Team Member** (default), enforced by global `JwtAuthGuard` + `RolesGuard`. |
+| Role-scoped visibility | Team Members see only projects/tasks/activities they belong to; Admin & PM see everything. |
+| Permission gates | Create/delete projects, manage members, create/delete tasks, and change task priority are role-gated server-side **and** mirrored in the UI (buttons/tabs hidden by role). |
+
+### Projects
+
+| Feature | Details |
+| ------- | ------- |
+| Full CRUD | List (paginated), create, read, update, delete (`/projects`). Delete cascades to tasks (Admin only). |
+| Status | `active` / `completed` / `on_hold`. |
+| Member management | Add/remove members (`/projects/:id/members`); creator is always a member and cannot be removed; members with open tasks cannot be removed. |
+| Search & filters | Name search, status filter, and `deadlineStatus` = `upcoming` (≤7 days) / `overdue`. |
+| Sorting & pagination | Sort by `createdAt`, `updatedAt`, `name`, `deadline`; page-based (limit ≤100). |
+| Validation | Case-insensitive unique name (3–120 chars), description ≤2000 chars, ISO deadline. |
+
+### Tasks
+
+| Feature | Details |
+| ------- | ------- |
+| Full CRUD | List (paginated), create, read, update, delete (`/tasks`). |
+| Status & priority | Status `todo` / `in_progress` / `completed`; priority `high` / `medium` / `low`. |
+| Dedicated status endpoint | `PATCH /tasks/:id/status` for quick status changes (with optimistic UI update). |
+| Bulk actions | `POST /tasks/bulk` updates status or deletes up to 100 tasks, returning per-item `succeeded` / `failed` results. |
+| Assignment | Assign to a project member, reassign, or unassign; completed tasks can't be reassigned. |
+| Filters & search | By project, status, priority, assignee, `deadlineStatus`, and title search. |
+| Sorting & pagination | Sort by `createdAt`, `updatedAt`, `dueDate`, `priority`, `title`; limit ≤100. |
+| Validation | Title 2–160 chars (unique per project), future-only due date, ≤20 attachments. |
+
+### Comments
+
+| Feature | Details |
+| ------- | ------- |
+| Threaded discussion | List/create/edit/delete comments on a task (`/tasks/:taskId/comments`), ordered oldest-first, paginated. |
+| Permissions | Comment author or Admin/PM may edit or delete; visibility inherits the task's project access. |
+| Notifications & audit | Posting a comment notifies the task assignee, creator, and prior commenters, and records a `TASK_COMMENTED` activity. |
+
+### Notifications
+
+| Feature | Details |
+| ------- | ------- |
+| In-app inbox | `GET /notifications` (paginated, newest-first) with an `unreadOnly` filter. |
+| Unread count | `GET /notifications/unread-count` powers the header bell badge (99+ cap). |
+| Mark read | Mark one (`PATCH /notifications/:id/read`) or all (`POST /notifications/read-all`). |
+| Types | `task_assigned`, `comment_added` (live); `task_updated`, `deadline_soon` (reserved). |
+| Dispatch behavior | Best-effort (never rolls back the source action), recipients de-duplicated, `taskId` deep-links survive task deletion. |
+| Notification bell | Header dropdown lists recent items, marks all read, and navigates to the related task. |
+
+### Activity feed
+
+| Feature | Details |
+| ------- | ------- |
+| Audit log | Chronological, paginated, role-scoped feed (`GET /activities`) filterable by project and type. |
+| Tracked events | Project created/updated/deleted, task created/assigned/status-changed/deleted/commented, member added/removed. |
+| Resilient records | Pre-rendered messages with denormalized `projectId`/`projectName` that survive project deletion; logging is best-effort. |
+| UI | Color-coded, icon-tagged timeline with relative timestamps, on the dashboard (latest 5) and a full `/activity` page. |
+
+### Analytics & dashboard
+
+| Feature | Details |
+| ------- | ------- |
+| Dashboard summary | Totals for projects/tasks plus completed/pending/overdue and status/priority breakdowns (`/analytics/dashboard`). |
+| Per-project stats | Completion %, deadline, and overdue counts per project (`/analytics/projects`). |
+| Progress trend | 8-week created-vs-completed burn-up (`/analytics/trend`). |
+| Upcoming deadlines | Tasks due within 7 days (`/analytics/upcoming`). |
+| High-priority tasks | Open high-priority tasks (`/analytics/high-priority`). |
+| Team workload | Per-member total/completed/pending counts (`/analytics/workload`, Admin/PM only). |
+| Visualizations | Recharts pie, bar, and area charts with theme-aware tooltips. |
+
+### File attachments
+
+| Feature | Details |
+| ------- | ------- |
+| Multipart upload | `POST /uploads` accepts up to 10 files per request (multipart/form-data). |
+| Validation | MIME-allowlisted (images, PDF, Word/Excel/PowerPoint, plain text, CSV, ZIP) and size-capped (`MAX_FILE_SIZE_MB`, default 10 MB). |
+| Storage & serving | Saved to disk with UUID filenames and served statically; URLs attach to tasks. |
+| Web picker | `AttachmentField` multi-file component with de-duplication, existing-attachment removal, and download links. |
+
+### Web app & UX
+
+| Feature | Details |
+| ------- | ------- |
+| File-based routing | TanStack Router pages: Login, Signup, Dashboard, Projects (list/new/detail/edit), Tasks (list/detail), Team, Activity, Settings. |
+| Data layer | TanStack Query (axios client, token interceptor, auto-refresh, query-key factory, optimistic task status updates). |
+| Data tables | TanStack Table task grid with sorting, multi-select, inline status editing, and a bulk-action toolbar. |
+| Dark / light theme | Persisted theme toggle (header + Settings) that syncs the document class and chart tooltips. |
+| Login niceties | Password-visibility toggle and one-click demo-account login (Admin / PM / Team Member). |
+| Toasts | `react-hot-toast` success/error feedback across all mutations. |
+| Permission-aware UI | Buttons, tabs, and editors render conditionally by role/assignment. |
+| Accessibility | `aria-label`s on icon buttons, label/input associations, visible focus rings, semantic markup. |
+
+### Reusable UI components
+
+| Component | Details |
+| --------- | ------- |
+| **Custom modal dialog (`ConfirmDialog`)** | Imperative, **promise-based** confirmation dialog driven by a Zustand store (`confirm({ message })` resolves `true`/`false`). Mounted once globally — no prop drilling. Supports `title`, `message`, `confirmText`, `cancelText`, and `variant` (`danger`/`primary`); used for project, task, and bulk-delete confirmations. |
+| `Modal` | Base overlay primitive behind `ConfirmDialog` and edit forms — backdrop click-to-close, Escape-to-close, close button, scrollable content, dark mode. |
+| Design system | `Button` (primary/ghost/danger/outline + loading), `Input`, `Textarea`, `Select`, `Card`, `Label`, `FieldError`, `Badge` (color-coded status/priority), `Spinner`, `Pagination` (with per-page selector), `EmptyState`. |
+| `AppShell` | Sidebar + header layout with role-based nav, notification bell, theme toggle, and logout. |
+| `NotificationBell` | Header dropdown with unread badge and mark-all-read. |
+
+### API & platform
+
+| Feature | Details |
+| ------- | ------- |
+| REST API | Versioned under `/api/v1`, consistent `{ data, meta }` pagination envelope (limit ≤100). |
+| API docs | Interactive **Swagger / OpenAPI** UI at `/api/docs`, generated from the controllers. |
+| Typed contract | `@collabflow/shared` enums, types, and DTOs shared across API and web. |
+| User directory | `GET /users` (Admin/PM) with role filter and name/email search for member pickers. |
+| CORS | Configurable allow-list via `ALLOWED_ORIGINS`. |
 
 ---
 
