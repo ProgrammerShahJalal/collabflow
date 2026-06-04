@@ -10,6 +10,7 @@ import {
   Sun,
   LogOut,
 } from 'lucide-react';
+import { UserRole } from '@collabflow/shared';
 import { useThemeStore } from '@/stores/theme.store';
 import { useAuthStore } from '@/stores/auth.store';
 import { useLogout } from '@/features/auth/auth.api';
@@ -19,7 +20,7 @@ const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/projects', label: 'Projects', icon: FolderKanban },
   { to: '/tasks', label: 'Tasks', icon: ListChecks },
-  { to: '/team', label: 'Team', icon: Users },
+  { to: '/team', label: 'Team', icon: Users, roles: [UserRole.ADMIN, UserRole.PROJECT_MANAGER] },
   { to: '/activity', label: 'Activity', icon: Activity },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
@@ -44,7 +45,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </span>
         </div>
         <nav className="flex flex-1 flex-col gap-1">
-          {NAV.map(({ to, label, icon: Icon }) => (
+          {NAV.filter(({ roles }) => !roles || (user && roles.includes(user.role))).map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
               to={to}
