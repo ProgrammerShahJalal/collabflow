@@ -3,26 +3,44 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Search } from 'lucide-react';
 import { useTasks } from '@/features/tasks/tasks.api';
 import { useProjects } from '@/features/projects/projects.api';
+import { useUsers } from '@/features/team/users.api';
 import { TaskTable } from '@/features/tasks/TaskTable';
+import { useAuthStore } from '@/stores/auth.store';
+import { canManageProjects } from '@/lib/permissions';
 import { EmptyState, Input, Select, Spinner } from '@/components/ui';
 
+interface TasksSearch {
+  assigneeId?: string;
+}
+
 export const Route = createFileRoute('/_auth/tasks/')({
+  validateSearch: (search: Record<string, unknown>): TasksSearch => ({
+    assigneeId:
+      typeof search.assigneeId === 'string' ? search.assigneeId : undefined,
+  }),
   component: AllTasksPage,
 });
 
 function AllTasksPage() {
+  const { assigneeId: initialAssigneeId } = Route.useSearch();
+  const user = useAuthStore((s) => s.user);
+  const canFilterByMember = canManageProjects(user);
+
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [priority, setPriority] = useState('');
   const [projectId, setProjectId] = useState('');
+  const [assigneeId, setAssigneeId] = useState(initialAssigneeId ?? '');
 
   const { data: projects } = useProjects({ limit: 100 });
+  const { data: members } = useUsers(undefined, canFilterByMember);
 
   const { data, isLoading } = useTasks({
     search: search || undefined,
     status: status || undefined,
     priority: priority || undefined,
     projectId: projectId || undefined,
+    assigneeId: assigneeId || undefined,
     limit: 100,
   });
 
@@ -60,6 +78,19 @@ function AllTasksPage() {
             </option>
           ))}
         </Select>
+        {canFilterByMember && (
+          <Select
+            value={assigneeId}
+            onChange={(e) => setAssigneeId(e.target.value)}
+          >
+            <option value="">All members</option>
+            {members?.map((member) => (
+              <option key={member.id} value={member.id}>
+                {member.name}
+              </option>
+            ))}
+          </Select>
+        )}
       </div>
 
       {isLoading ? (

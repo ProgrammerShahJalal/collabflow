@@ -3,6 +3,7 @@ import { EntityManager } from '@mikro-orm/mongodb';
 import { Project } from '../projects/project.entity';
 import { Task, TaskStatus } from '../tasks/task.entity';
 import { User, UserRole } from '../users/user.entity';
+import { presentUser } from '../common/serializers/presenters';
 
 @Injectable()
 export class AnalyticsService {
@@ -60,5 +61,42 @@ export class AnalyticsService {
       overdueTasks,
       tasksByStatus: byStatus,
     };
+  }
+
+  /**
+   * Per-member workload summary: total / completed / pending task counts for
+   * each active user. Restricted to Admin/PM at the controller layer; mirrors
+   * the team roster (all active members) so the two views stay consistent.
+   */
+  async workload(_user: User) {
+    const members = await this.em.find(
+      User,
+      { isActive: true },
+      { orderBy: { name: 1 } },
+    );
+
+    const rows = await Promise.all(
+      members.map(async (member) => {
+        const [totalTasks, completedTasks, pendingTasks] = await Promise.all([
+          this.em.count(Task, { assignee: member._id }),
+          this.em.count(Task, {
+            assignee: member._id,
+            status: TaskStatus.COMPLETED,
+          }),
+          this.em.count(Task, {
+            assignee: member._id,
+            status: { $in: [TaskStatus.TODO, TaskStatus.IN_PROGRESS] },
+          }),
+        ]);
+        return {
+          user: presentUser(member),
+          totalTasks,
+          completedTasks,
+          pendingTasks,
+        };
+      }),
+    );
+
+    return rows;
   }
 }

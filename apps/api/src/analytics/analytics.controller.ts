@@ -1,8 +1,10 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { User } from '../users/user.entity';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { User, UserRole } from '../users/user.entity';
 
 @ApiTags('analytics')
 @ApiBearerAuth()
@@ -13,5 +15,12 @@ export class AnalyticsController {
   @Get('dashboard')
   dashboard(@CurrentUser() user: User) {
     return this.analyticsService.dashboard(user);
+  }
+
+  @Get('workload')
+  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
+  @UseGuards(RolesGuard)
+  workload(@CurrentUser() user: User) {
+    return this.analyticsService.workload(user);
   }
 }

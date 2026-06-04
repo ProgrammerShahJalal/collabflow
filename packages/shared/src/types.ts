@@ -71,3 +71,10 @@ export interface DashboardKpis {
   pendingTasks: number;
   overdueTasks: number;
 }
+
+export interface WorkloadRow {
+  user: UserDto;
+  totalTasks: number;
+  completedTasks: number;
+  pendingTasks: number;
+}
