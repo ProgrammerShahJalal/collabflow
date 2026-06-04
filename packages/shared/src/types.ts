@@ -71,6 +71,25 @@ export interface DashboardKpis {
   completedTasks: number;
   pendingTasks: number;
   overdueTasks: number;
+  tasksByStatus: { todo: number; in_progress: number; completed: number };
+  tasksByPriority: { high: number; medium: number; low: number };
+}
+
+export interface ProgressTrendPoint {
+  date: string;
+  created: number;
+  completed: number;
+}
+
+export interface TaskBriefRow {
+  id: string;
+  title: string;
+  dueDate?: string | null;
+  priority: TaskPriority;
+  status: TaskStatus;
+  projectId?: string | null;
+  projectName?: string | null;
+  assignee?: { id: string; name: string } | null;
 }
 
 export interface WorkloadRow {

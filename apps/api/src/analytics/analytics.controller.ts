@@ -22,6 +22,21 @@ export class AnalyticsController {
     return this.analyticsService.projectSummaries(user);
   }
 
+  @Get('trend')
+  progressTrend(@CurrentUser() user: User) {
+    return this.analyticsService.progressTrend(user);
+  }
+
+  @Get('upcoming')
+  upcomingDeadlines(@CurrentUser() user: User) {
+    return this.analyticsService.upcomingDeadlines(user);
+  }
+
+  @Get('high-priority')
+  highPriorityTasks(@CurrentUser() user: User) {
+    return this.analyticsService.highPriorityTasks(user);
+  }
+
   @Get('workload')
   @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
   @UseGuards(RolesGuard)

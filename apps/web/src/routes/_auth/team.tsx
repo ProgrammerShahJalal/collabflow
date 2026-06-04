@@ -1,4 +1,14 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { useUsers } from '@/features/team/users.api';
 import { useWorkload } from '@/features/dashboard/dashboard.api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -53,8 +63,51 @@ function TeamPage() {
         )}
       </div>
 
+      <TeamProductivity enabled={canManage} />
+
       <WorkloadSummary enabled={canManage} />
     </div>
+  );
+}
+
+function TeamProductivity({ enabled }: { enabled: boolean }) {
+  const { data: rows, isLoading } = useWorkload(enabled);
+
+  const chartData = (rows ?? [])
+    .filter((r) => r.totalTasks > 0)
+    .map((r) => ({
+      name: r.user.name.split(' ')[0],
+      Completed: r.completedTasks,
+      Pending: r.pendingTasks,
+    }));
+
+  return (
+    <Card>
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold">Team Productivity Overview</h2>
+        <p className="text-sm text-slate-500">
+          Completed vs. pending tasks per member.
+        </p>
+      </div>
+
+      {isLoading ? (
+        <Spinner />
+      ) : chartData.length === 0 ? (
+        <EmptyState title="No task assignments yet" />
+      ) : (
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+            <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} />
+            <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={12} />
+            <Tooltip cursor={{ fill: 'rgba(148,163,184,0.1)' }} />
+            <Legend />
+            <Bar dataKey="Completed" stackId="a" fill="#22c55e" radius={[0, 0, 0, 0]} maxBarSize={64} />
+            <Bar dataKey="Pending" stackId="a" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={64} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </Card>
   );
 }
 

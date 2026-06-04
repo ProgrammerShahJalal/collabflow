@@ -17,26 +17,41 @@ import {
 
 interface TasksSearch {
   assigneeId?: string;
+  priority?: string;
+  deadlineStatus?: string;
 }
 
 export const Route = createFileRoute('/_auth/tasks/')({
   validateSearch: (search: Record<string, unknown>): TasksSearch => ({
     assigneeId:
       typeof search.assigneeId === 'string' ? search.assigneeId : undefined,
+    priority:
+      typeof search.priority === 'string' ? search.priority : undefined,
+    deadlineStatus:
+      typeof search.deadlineStatus === 'string'
+        ? search.deadlineStatus
+        : undefined,
   }),
   component: AllTasksPage,
 });
 
 function AllTasksPage() {
-  const { assigneeId: initialAssigneeId } = Route.useSearch();
+  const {
+    assigneeId: initialAssigneeId,
+    priority: initialPriority,
+    deadlineStatus: initialDeadlineStatus,
+  } = Route.useSearch();
   const user = useAuthStore((s) => s.user);
   const canFilterByMember = canManageProjects(user);
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
-  const [priority, setPriority] = useState('');
+  const [priority, setPriority] = useState(initialPriority ?? '');
   const [projectId, setProjectId] = useState('');
   const [assigneeId, setAssigneeId] = useState(initialAssigneeId ?? '');
+  const [deadlineStatus, setDeadlineStatus] = useState(
+    initialDeadlineStatus ?? '',
+  );
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
 
@@ -44,7 +59,7 @@ function AllTasksPage() {
   // isn't stranded on a now-out-of-range page.
   useEffect(() => {
     setPage(1);
-  }, [search, status, priority, projectId, assigneeId]);
+  }, [search, status, priority, projectId, assigneeId, deadlineStatus]);
 
   const { data: projects } = useProjects({ limit: 100 });
   const { data: members } = useUsers(undefined, canFilterByMember);
@@ -55,6 +70,7 @@ function AllTasksPage() {
     priority: priority || undefined,
     projectId: projectId || undefined,
     assigneeId: assigneeId || undefined,
+    deadlineStatus: deadlineStatus || undefined,
     page,
     limit: perPage,
   });
@@ -84,6 +100,14 @@ function AllTasksPage() {
           <option value="high">High</option>
           <option value="medium">Medium</option>
           <option value="low">Low</option>
+        </Select>
+        <Select
+          value={deadlineStatus}
+          onChange={(e) => setDeadlineStatus(e.target.value)}
+        >
+          <option value="">Any deadline</option>
+          <option value="upcoming">Due soon</option>
+          <option value="overdue">Overdue</option>
         </Select>
         <Select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
           <option value="">All projects</option>
