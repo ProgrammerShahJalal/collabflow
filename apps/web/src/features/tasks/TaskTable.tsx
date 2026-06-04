@@ -15,6 +15,7 @@ import { Badge, Modal, Select } from '@/components/ui';
 import { cn, formatDate, isOverdue } from '@/lib/utils';
 import { apiErrorMessage } from '@/lib/api';
 import { canManageTasks } from '@/lib/permissions';
+import { confirm } from '@/stores/confirm.store';
 import { useAuthStore } from '@/stores/auth.store';
 import { useDeleteTask, useUpdateTaskStatus } from './tasks.api';
 import { EditTaskForm } from './EditTaskForm';
@@ -47,7 +48,12 @@ function RowActions({
   const deleteTask = useDeleteTask();
 
   const handleDelete = async () => {
-    if (!confirm(`Delete task "${task.title}"? This cannot be undone.`)) return;
+    const ok = await confirm({
+      title: 'Delete task',
+      message: `Delete task "${task.title}"? This cannot be undone.`,
+      confirmText: 'Delete',
+    });
+    if (!ok) return;
     try {
       await deleteTask.mutateAsync(task.id);
       toast.success('Task deleted');

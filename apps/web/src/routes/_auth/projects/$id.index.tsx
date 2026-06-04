@@ -13,6 +13,7 @@ import { useUsers } from '@/features/team/users.api';
 import { TaskTable } from '@/features/tasks/TaskTable';
 import { CreateTaskForm } from '@/features/tasks/CreateTaskForm';
 import { useAuthStore } from '@/stores/auth.store';
+import { confirm } from '@/stores/confirm.store';
 import { canDeleteProjects, canManageTasks, canManageProjects } from '@/lib/permissions';
 import { apiErrorMessage } from '@/lib/api';
 import {
@@ -43,7 +44,12 @@ function ProjectDetailPage() {
   const members = project.members ?? [];
 
   const handleDelete = async () => {
-    if (!confirm('Delete this project and all its tasks?')) return;
+    const ok = await confirm({
+      title: 'Delete project',
+      message: 'Delete this project and all its tasks? This cannot be undone.',
+      confirmText: 'Delete',
+    });
+    if (!ok) return;
     try {
       await deleteProject.mutateAsync(id);
       toast.success('Project deleted');
