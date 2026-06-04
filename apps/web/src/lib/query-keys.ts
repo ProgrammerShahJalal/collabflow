@@ -11,5 +11,9 @@ export const keys = {
   upcomingDeadlines: () => ['analytics', 'upcoming'] as const,
   highPriorityTasks: () => ['analytics', 'high-priority'] as const,
   activities: (filters?: object) => ['activities', filters ?? {}] as const,
+  comments: (taskId: string) => ['comments', taskId] as const,
+  notifications: (filters?: object) =>
+    ['notifications', filters ?? {}] as const,
+  notificationsUnread: () => ['notifications', 'unread-count'] as const,
   me: () => ['auth', 'me'] as const,
 };

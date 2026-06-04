@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Paperclip } from 'lucide-react';
 import { useTask, useUpdateTask } from '@/features/tasks/tasks.api';
+import { CommentSection } from '@/features/comments/CommentSection';
 import { useAuthStore } from '@/stores/auth.store';
 import { apiErrorMessage } from '@/lib/api';
 import { Badge, Card, Select, Spinner } from '@/components/ui';
@@ -142,6 +143,8 @@ function TaskDetailPage() {
           </dl>
         </Card>
       </div>
+
+      <CommentSection taskId={id} />
     </div>
   );
 }

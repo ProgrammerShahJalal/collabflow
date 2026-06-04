@@ -15,6 +15,7 @@ import { useThemeStore } from '@/stores/theme.store';
 import { useAuthStore } from '@/stores/auth.store';
 import { useLogout } from '@/features/auth/auth.api';
 import { Button } from './ui';
+import { NotificationBell } from './NotificationBell';
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -65,6 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {user ? `Welcome, ${user.name}` : 'CollabFlow'}
           </div>
           <div className="flex items-center gap-2">
+            <NotificationBell />
             <Button variant="ghost" onClick={toggle} aria-label="Toggle theme">
               {theme === 'dark' ? (
                 <Sun className="h-4 w-4" />

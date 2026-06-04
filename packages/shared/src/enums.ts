@@ -37,6 +37,7 @@ export enum ActivityType {
   TASK_ASSIGNED = 'task_assigned',
   TASK_STATUS_CHANGED = 'task_status_changed',
   TASK_DELETED = 'task_deleted',
+  TASK_COMMENTED = 'task_commented',
   MEMBER_ADDED = 'member_added',
   MEMBER_REMOVED = 'member_removed',
 }

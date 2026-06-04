@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   FolderPlus,
   ListPlus,
+  MessageSquare,
   Trash2,
   UserMinus,
   UserPlus,
@@ -27,6 +28,10 @@ const ICONS: Record<
     color: 'text-green-600',
   },
   [ActivityType.TASK_DELETED]: { icon: Trash2, color: 'text-red-600' },
+  [ActivityType.TASK_COMMENTED]: {
+    icon: MessageSquare,
+    color: 'text-indigo-600',
+  },
   [ActivityType.MEMBER_ADDED]: { icon: UserPlus, color: 'text-emerald-600' },
   [ActivityType.MEMBER_REMOVED]: { icon: UserMinus, color: 'text-amber-600' },
 };

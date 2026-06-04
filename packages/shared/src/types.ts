@@ -1,5 +1,6 @@
 import {
   ActivityType,
+  NotificationType,
   ProjectStatus,
   TaskPriority,
   TaskStatus,
@@ -40,6 +41,20 @@ export interface TaskDto extends BaseDto {
   assignee?: UserDto | null;
   createdBy: UserDto | string;
   attachments: string[];
+}
+
+export interface CommentDto extends BaseDto {
+  body: string;
+  author: UserDto;
+  taskId: string;
+}
+
+export interface NotificationDto extends BaseDto {
+  type: NotificationType;
+  message: string;
+  actor?: UserDto | null;
+  read: boolean;
+  taskId?: string | null;
 }
 
 export interface AuthResponse {

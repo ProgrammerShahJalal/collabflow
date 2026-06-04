@@ -2,6 +2,8 @@ import { User } from '../../users/user.entity';
 import { Project } from '../../projects/project.entity';
 import { Task } from '../../tasks/task.entity';
 import { Activity } from '../../activities/activity.entity';
+import { Comment } from '../../comments/comment.entity';
+import { Notification } from '../../notifications/notification.entity';
 
 export interface UserView {
   id: string;
@@ -55,6 +57,30 @@ export function presentActivity(activity: Activity) {
     projectName: activity.projectName ?? null,
     createdAt: activity.createdAt.toISOString(),
     updatedAt: activity.updatedAt.toISOString(),
+  };
+}
+
+export function presentComment(comment: Comment) {
+  return {
+    id: comment.id,
+    body: comment.body,
+    author: presentUser(comment.author),
+    taskId: comment.task.id,
+    createdAt: comment.createdAt.toISOString(),
+    updatedAt: comment.updatedAt.toISOString(),
+  };
+}
+
+export function presentNotification(notification: Notification) {
+  return {
+    id: notification.id,
+    type: notification.type,
+    message: notification.message,
+    actor: notification.actor ? presentUser(notification.actor) : null,
+    read: notification.read,
+    taskId: notification.taskId ?? null,
+    createdAt: notification.createdAt.toISOString(),
+    updatedAt: notification.updatedAt.toISOString(),
   };
 }
 

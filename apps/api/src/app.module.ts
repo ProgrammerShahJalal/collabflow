@@ -15,6 +15,8 @@ import { ProjectsModule } from './projects/projects.module';
 import { TasksModule } from './tasks/tasks.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ActivitiesModule } from './activities/activities.module';
+import { CommentsModule } from './comments/comments.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { ActivitiesModule } from './activities/activities.module';
     TasksModule,
     AnalyticsModule,
     ActivitiesModule,
+    CommentsModule,
+    NotificationsModule,
     UploadsModule,
   ],
   providers: [
