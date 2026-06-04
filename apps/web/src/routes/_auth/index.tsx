@@ -34,6 +34,7 @@ import {
 } from '@/features/dashboard/dashboard.api';
 import { Badge, Card, EmptyState, Spinner } from '@/components/ui';
 import { ActivityFeed } from '@/features/activities/ActivityFeed';
+import { useThemeStore } from '@/stores/theme.store';
 import { fromNow } from '@/lib/utils';
 
 export const Route = createFileRoute('/_auth/')({
@@ -49,6 +50,18 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 function DashboardPage() {
   const { data, isLoading } = useDashboard();
+  const isDark = useThemeStore((s) => s.theme === 'dark');
+
+  // Recharts has no theme awareness, so the default tooltip renders a near-white
+  // title on its light surface. Drive the tooltip colors off the app theme.
+  const tooltipStyle = {
+    backgroundColor: isDark ? '#1e293b' : '#ffffff',
+    border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
+    borderRadius: '0.5rem',
+    color: isDark ? '#e2e8f0' : '#0f172a',
+  };
+  const tooltipLabelStyle = { color: isDark ? '#cbd5e1' : '#475569' };
+  const tooltipItemStyle = { color: isDark ? '#e2e8f0' : '#0f172a' };
 
   if (isLoading || !data) return <Spinner />;
 
@@ -108,7 +121,11 @@ function DashboardPage() {
                     <Cell key={i} fill={STATUS_COLORS[i]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  labelStyle={tooltipLabelStyle}
+                  itemStyle={tooltipItemStyle}
+                />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -127,7 +144,12 @@ function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                 <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} />
                 <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={12} />
-                <Tooltip cursor={{ fill: 'rgba(148,163,184,0.1)' }} />
+                <Tooltip
+                  cursor={{ fill: 'rgba(148,163,184,0.1)' }}
+                  contentStyle={tooltipStyle}
+                  labelStyle={tooltipLabelStyle}
+                  itemStyle={tooltipItemStyle}
+                />
                 <Bar dataKey="value" name="Tasks" radius={[6, 6, 0, 0]} maxBarSize={80}>
                   {priorityData.map((d) => (
                     <Cell key={d.name} fill={PRIORITY_COLORS[d.name]} />
@@ -187,6 +209,15 @@ function DashboardPage() {
 
 function ProgressTrend() {
   const { data, isLoading } = useProgressTrend();
+  const isDark = useThemeStore((s) => s.theme === 'dark');
+
+  const tooltipStyle = {
+    backgroundColor: isDark ? '#1e293b' : '#ffffff',
+    border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
+    borderRadius: '0.5rem',
+    color: isDark ? '#e2e8f0' : '#0f172a',
+  };
+  const tooltipLabelStyle = { color: isDark ? '#cbd5e1' : '#475569' };
 
   const chartData = (data ?? []).map((p) => ({
     label: format(new Date(p.date), 'MMM d'),
@@ -221,7 +252,7 @@ function ProgressTrend() {
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
             <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
             <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={12} />
-            <Tooltip />
+            <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} />
             <Legend />
             <Area
               type="monotone"
