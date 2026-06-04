@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ArrayMaxSize,
+  ArrayNotEmpty,
+  IsArray,
   IsDateString,
   IsEnum,
   IsOptional,
@@ -9,6 +12,11 @@ import {
 } from 'class-validator';
 import { TaskPriority, TaskStatus } from '../task.entity';
 import { PaginationQueryDto } from '../../common/dto/pagination.dto';
+
+export enum BulkTaskAction {
+  UPDATE_STATUS = 'update_status',
+  DELETE = 'delete',
+}
 
 export class CreateTaskDto {
   @ApiProperty({ minLength: 2, maxLength: 160 })
@@ -87,6 +95,27 @@ export class UpdateTaskStatusDto {
   @ApiProperty({ enum: TaskStatus })
   @IsEnum(TaskStatus)
   status!: TaskStatus;
+}
+
+export class BulkTaskActionDto {
+  @ApiProperty({ type: [String], description: 'Task IDs to act on (max 100)' })
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayMaxSize(100)
+  @IsString({ each: true })
+  taskIds!: string[];
+
+  @ApiProperty({ enum: BulkTaskAction })
+  @IsEnum(BulkTaskAction)
+  action!: BulkTaskAction;
+
+  @ApiPropertyOptional({
+    enum: TaskStatus,
+    description: 'Required when action is update_status',
+  })
+  @IsOptional()
+  @IsEnum(TaskStatus)
+  status?: TaskStatus;
 }
 
 export class TaskQueryDto extends PaginationQueryDto {

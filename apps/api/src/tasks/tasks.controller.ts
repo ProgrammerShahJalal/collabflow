@@ -12,6 +12,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { TasksService } from './tasks.service';
 import {
+  BulkTaskActionDto,
   CreateTaskDto,
   TaskQueryDto,
   UpdateTaskDto,
@@ -40,6 +41,13 @@ export class TasksController {
   @UseGuards(RolesGuard)
   async create(@Body() dto: CreateTaskDto, @CurrentUser() user: User) {
     return presentTask(await this.tasksService.create(dto, user));
+  }
+
+  // Declared before the :id routes so the literal "bulk" segment is matched
+  // first. Per-task permissions are enforced inside the service.
+  @Post('bulk')
+  async bulk(@Body() dto: BulkTaskActionDto, @CurrentUser() user: User) {
+    return this.tasksService.bulkAction(dto, user);
   }
 
   @Get(':id')

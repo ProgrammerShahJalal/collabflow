@@ -106,6 +106,32 @@ export function useUpdateTaskStatus() {
   });
 }
 
+export interface BulkTaskInput {
+  taskIds: string[];
+  action: 'update_status' | 'delete';
+  status?: string;
+}
+
+export interface BulkTaskResult {
+  succeeded: string[];
+  failed: { id: string; reason: string }[];
+}
+
+export function useBulkTaskAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: BulkTaskInput) => {
+      const { data } = await api.post<BulkTaskResult>('/tasks/bulk', input);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['analytics'] });
+      qc.invalidateQueries({ queryKey: ['activities'] });
+    },
+  });
+}
+
 export function useDeleteTask() {
   const qc = useQueryClient();
   return useMutation({

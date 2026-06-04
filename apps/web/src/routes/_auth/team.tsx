@@ -12,6 +12,7 @@ import {
 import { useUsers } from '@/features/team/users.api';
 import { useWorkload } from '@/features/dashboard/dashboard.api';
 import { useAuthStore } from '@/stores/auth.store';
+import { useThemeStore } from '@/stores/theme.store';
 import { canManageProjects } from '@/lib/permissions';
 import { Badge, Card, EmptyState, Spinner } from '@/components/ui';
 
@@ -72,11 +73,23 @@ function TeamPage() {
 
 function TeamProductivity({ enabled }: { enabled: boolean }) {
   const { data: rows, isLoading } = useWorkload(enabled);
+  const isDark = useThemeStore((s) => s.theme === 'dark');
+
+  // Recharts has no theme awareness, so axis labels render near-black on the
+  // dark surface. Drive the tick / grid / tooltip colors off the app theme.
+  const tickColor = isDark ? '#cbd5e1' : '#475569';
+  const gridColor = isDark ? '#334155' : '#e2e8f0';
+  const tooltipStyle = {
+    backgroundColor: isDark ? '#1e293b' : '#ffffff',
+    border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
+    borderRadius: '0.5rem',
+    color: isDark ? '#e2e8f0' : '#0f172a',
+  };
 
   const chartData = (rows ?? [])
     .filter((r) => r.totalTasks > 0)
     .map((r) => ({
-      name: r.user.name.split(' ')[0],
+      name: r.user.name,
       Completed: r.completedTasks,
       Pending: r.pendingTasks,
     }));
@@ -97,10 +110,26 @@ function TeamProductivity({ enabled }: { enabled: boolean }) {
       ) : (
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-            <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} />
-            <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={12} />
-            <Tooltip cursor={{ fill: 'rgba(148,163,184,0.1)' }} />
+            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+            <XAxis
+              dataKey="name"
+              tickLine={false}
+              axisLine={false}
+              fontSize={12}
+              tick={{ fill: tickColor }}
+            />
+            <YAxis
+              allowDecimals={false}
+              tickLine={false}
+              axisLine={false}
+              fontSize={12}
+              tick={{ fill: tickColor }}
+            />
+            <Tooltip
+              cursor={{ fill: 'rgba(148,163,184,0.1)' }}
+              contentStyle={tooltipStyle}
+              labelStyle={{ color: tickColor }}
+            />
             <Legend />
             <Bar dataKey="Completed" stackId="a" fill="#22c55e" radius={[0, 0, 0, 0]} maxBarSize={64} />
             <Bar dataKey="Pending" stackId="a" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={64} />

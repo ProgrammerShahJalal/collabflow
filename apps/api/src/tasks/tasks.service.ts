@@ -13,6 +13,8 @@ import { Project } from '../projects/project.entity';
 import { User, UserRole } from '../users/user.entity';
 import { UsersService } from '../users/users.service';
 import {
+  BulkTaskAction,
+  BulkTaskActionDto,
   CreateTaskDto,
   TaskQueryDto,
   UpdateTaskDto,
@@ -299,6 +301,42 @@ export class TasksService {
     }
 
     return task;
+  }
+
+  /**
+   * Apply a single action (status change or delete) to many tasks. Each item is
+   * processed through the same per-task path as the single-item endpoints, so
+   * permission checks and activity logging stay identical. Failures are
+   * collected per-task rather than aborting the whole batch.
+   */
+  async bulkAction(dto: BulkTaskActionDto, user: User) {
+    if (dto.action === BulkTaskAction.UPDATE_STATUS && !dto.status) {
+      throw new BadRequestException(
+        'A target status is required to update tasks.',
+      );
+    }
+
+    const ids = [...new Set(dto.taskIds)];
+    const succeeded: string[] = [];
+    const failed: { id: string; reason: string }[] = [];
+
+    for (const id of ids) {
+      try {
+        if (dto.action === BulkTaskAction.UPDATE_STATUS) {
+          await this.updateStatus(id, dto.status!, user);
+        } else {
+          await this.remove(id, user);
+        }
+        succeeded.push(id);
+      } catch (err) {
+        failed.push({
+          id,
+          reason: err instanceof Error ? err.message : 'Action failed.',
+        });
+      }
+    }
+
+    return { succeeded, failed };
   }
 
   async remove(id: string, user: User): Promise<void> {
