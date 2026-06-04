@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { Search } from 'lucide-react';
 import { useTasks } from '@/features/tasks/tasks.api';
@@ -7,7 +7,13 @@ import { useUsers } from '@/features/team/users.api';
 import { TaskTable } from '@/features/tasks/TaskTable';
 import { useAuthStore } from '@/stores/auth.store';
 import { canManageProjects } from '@/lib/permissions';
-import { EmptyState, Input, Select, Spinner } from '@/components/ui';
+import {
+  EmptyState,
+  Input,
+  Pagination,
+  Select,
+  Spinner,
+} from '@/components/ui';
 
 interface TasksSearch {
   assigneeId?: string;
@@ -31,6 +37,14 @@ function AllTasksPage() {
   const [priority, setPriority] = useState('');
   const [projectId, setProjectId] = useState('');
   const [assigneeId, setAssigneeId] = useState(initialAssigneeId ?? '');
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+
+  // Filters narrow the result set — jump back to the first page so the user
+  // isn't stranded on a now-out-of-range page.
+  useEffect(() => {
+    setPage(1);
+  }, [search, status, priority, projectId, assigneeId]);
 
   const { data: projects } = useProjects({ limit: 100 });
   const { data: members } = useUsers(undefined, canFilterByMember);
@@ -41,7 +55,8 @@ function AllTasksPage() {
     priority: priority || undefined,
     projectId: projectId || undefined,
     assigneeId: assigneeId || undefined,
-    limit: 100,
+    page,
+    limit: perPage,
   });
 
   return (
@@ -98,7 +113,19 @@ function AllTasksPage() {
       ) : !data?.data.length ? (
         <EmptyState title="No tasks found" />
       ) : (
-        <TaskTable tasks={data.data} />
+        <>
+          <TaskTable tasks={data.data} />
+          <Pagination
+            page={data.meta.page}
+            totalPages={data.meta.totalPages}
+            onPageChange={setPage}
+            perPage={perPage}
+            onPerPageChange={(n) => {
+              setPerPage(n);
+              setPage(1);
+            }}
+          />
+        </>
       )}
     </div>
   );

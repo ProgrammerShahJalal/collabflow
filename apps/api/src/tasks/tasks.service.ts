@@ -18,6 +18,14 @@ import {
   UpdateTaskDto,
 } from './dto/task.dto';
 import { paginate } from '../common/dto/pagination.dto';
+import { ActivitiesService } from '../activities/activities.service';
+import { ActivityType } from '../activities/activity.entity';
+
+const STATUS_LABELS: Record<TaskStatus, string> = {
+  [TaskStatus.TODO]: 'To Do',
+  [TaskStatus.IN_PROGRESS]: 'In Progress',
+  [TaskStatus.COMPLETED]: 'Completed',
+};
 
 const SORTABLE = new Set([
   'createdAt',
@@ -36,6 +44,7 @@ export class TasksService {
     private readonly projectRepo: EntityRepository<Project>,
     private readonly em: EntityManager,
     private readonly usersService: UsersService,
+    private readonly activities: ActivitiesService,
   ) {}
 
   private isElevated(user: User): boolean {
@@ -109,6 +118,16 @@ export class TasksService {
 
     await this.em.persistAndFlush(task);
     await this.em.populate(task, ['assignee', 'project', 'createdBy']);
+
+    await this.activities.record({
+      type: ActivityType.TASK_CREATED,
+      message: assignee
+        ? `${user.name} created task "${task.title}" and assigned it to ${assignee.name}`
+        : `${user.name} created task "${task.title}" in "${project.name}"`,
+      actor: user,
+      project,
+    });
+
     return task;
   }
 
@@ -173,6 +192,9 @@ export class TasksService {
     const task = await this.findOne(id, user);
     this.assertCanModify(task, user);
 
+    const prevStatus = task.status;
+    const prevAssigneeId = task.assignee?.id ?? null;
+
     // Rule: only Admin/PM may change priority. Team members may update their
     // assigned tasks (e.g. status) but not re-prioritise them.
     if (
@@ -230,6 +252,28 @@ export class TasksService {
 
     await this.em.flush();
     await this.em.populate(task, ['assignee', 'project', 'createdBy']);
+
+    if (task.status !== prevStatus) {
+      await this.activities.record({
+        type: ActivityType.TASK_STATUS_CHANGED,
+        message: `${user.name} marked "${task.title}" as ${STATUS_LABELS[task.status]}`,
+        actor: user,
+        project: task.project,
+      });
+    }
+
+    const newAssigneeId = task.assignee?.id ?? null;
+    if (newAssigneeId !== prevAssigneeId) {
+      await this.activities.record({
+        type: ActivityType.TASK_ASSIGNED,
+        message: task.assignee
+          ? `${user.name} assigned "${task.title}" to ${task.assignee.name}`
+          : `${user.name} unassigned "${task.title}"`,
+        actor: user,
+        project: task.project,
+      });
+    }
+
     return task;
   }
 
@@ -240,9 +284,20 @@ export class TasksService {
   ): Promise<Task> {
     const task = await this.findOne(id, user);
     this.assertCanModify(task, user);
+    const prevStatus = task.status;
     task.status = status;
     await this.em.flush();
     await this.em.populate(task, ['assignee', 'project', 'createdBy']);
+
+    if (task.status !== prevStatus) {
+      await this.activities.record({
+        type: ActivityType.TASK_STATUS_CHANGED,
+        message: `${user.name} marked "${task.title}" as ${STATUS_LABELS[task.status]}`,
+        actor: user,
+        project: task.project,
+      });
+    }
+
     return task;
   }
 
@@ -251,7 +306,15 @@ export class TasksService {
     if (!this.isElevated(user)) {
       throw new ForbiddenException('Only Admin or PM can delete tasks.');
     }
+    const taskRef = { title: task.title, project: task.project };
     await this.em.removeAndFlush(task);
+
+    await this.activities.record({
+      type: ActivityType.TASK_DELETED,
+      message: `${user.name} deleted task "${taskRef.title}"`,
+      actor: user,
+      project: taskRef.project,
+    });
   }
 
   private assertProjectAccess(project: Project, user: User): void {

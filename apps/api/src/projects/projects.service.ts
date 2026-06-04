@@ -18,6 +18,8 @@ import {
   UpdateProjectDto,
 } from './dto/project.dto';
 import { paginate } from '../common/dto/pagination.dto';
+import { ActivitiesService } from '../activities/activities.service';
+import { ActivityType } from '../activities/activity.entity';
 
 const SORTABLE = new Set(['createdAt', 'updatedAt', 'name', 'deadline']);
 
@@ -28,6 +30,7 @@ export class ProjectsService {
     private readonly repo: EntityRepository<Project>,
     private readonly em: EntityManager,
     private readonly usersService: UsersService,
+    private readonly activities: ActivitiesService,
   ) {}
 
   private isElevated(user: User): boolean {
@@ -60,6 +63,14 @@ export class ProjectsService {
     project.members.set(members.length ? members : [creator]);
 
     await this.em.persistAndFlush(project);
+
+    await this.activities.record({
+      type: ActivityType.PROJECT_CREATED,
+      message: `${creator.name} created project "${project.name}"`,
+      actor: creator,
+      project,
+    });
+
     return project;
   }
 
@@ -141,9 +152,19 @@ export class ProjectsService {
       throw new ForbiddenException('Only an admin can delete a project.');
     }
 
+    // Capture identity before the entity is removed from the unit of work.
+    const projectRef = { id: project.id, name: project.name };
+
     // Cascade: delete all tasks belonging to the project.
     await this.em.nativeDelete(Task, { project: project._id });
     await this.em.removeAndFlush(project);
+
+    await this.activities.record({
+      type: ActivityType.PROJECT_DELETED,
+      message: `${user.name} deleted project "${projectRef.name}"`,
+      actor: user,
+      project: projectRef,
+    });
   }
 
   async addMember(id: string, dto: AddMemberDto, user: User): Promise<Project> {
@@ -156,6 +177,14 @@ export class ProjectsService {
     }
     project.members.add(newMember);
     await this.em.flush();
+
+    await this.activities.record({
+      type: ActivityType.MEMBER_ADDED,
+      message: `${user.name} added ${newMember.name} to "${project.name}"`,
+      actor: user,
+      project,
+    });
+
     return project;
   }
 
@@ -185,6 +214,14 @@ export class ProjectsService {
 
     project.members.remove(member);
     await this.em.flush();
+
+    await this.activities.record({
+      type: ActivityType.MEMBER_REMOVED,
+      message: `${user.name} removed ${member.name} from "${project.name}"`,
+      actor: user,
+      project,
+    });
+
     return project;
   }
 

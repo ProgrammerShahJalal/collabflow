@@ -4,6 +4,7 @@ import {
   FolderKanban,
   ListChecks,
   Users,
+  Activity,
   Settings,
   Moon,
   Sun,
@@ -19,6 +20,7 @@ const NAV = [
   { to: '/projects', label: 'Projects', icon: FolderKanban },
   { to: '/tasks', label: 'Tasks', icon: ListChecks },
   { to: '/team', label: 'Team', icon: Users },
+  { to: '/activity', label: 'Activity', icon: Activity },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 

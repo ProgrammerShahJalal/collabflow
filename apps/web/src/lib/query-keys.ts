@@ -7,5 +7,6 @@ export const keys = {
   dashboard: () => ['analytics', 'dashboard'] as const,
   projectSummaries: () => ['analytics', 'projects'] as const,
   workload: () => ['analytics', 'workload'] as const,
+  activities: (filters?: object) => ['activities', filters ?? {}] as const,
   me: () => ['auth', 'me'] as const,
 };

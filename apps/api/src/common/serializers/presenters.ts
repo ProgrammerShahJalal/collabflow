@@ -1,6 +1,7 @@
 import { User } from '../../users/user.entity';
 import { Project } from '../../projects/project.entity';
 import { Task } from '../../tasks/task.entity';
+import { Activity } from '../../activities/activity.entity';
 
 export interface UserView {
   id: string;
@@ -41,6 +42,19 @@ export function presentProject(project: Project) {
       : [],
     createdAt: project.createdAt.toISOString(),
     updatedAt: project.updatedAt.toISOString(),
+  };
+}
+
+export function presentActivity(activity: Activity) {
+  return {
+    id: activity.id,
+    type: activity.type,
+    message: activity.message,
+    actor: activity.actor ? presentUser(activity.actor) : null,
+    projectId: activity.projectId ?? null,
+    projectName: activity.projectName ?? null,
+    createdAt: activity.createdAt.toISOString(),
+    updatedAt: activity.updatedAt.toISOString(),
   };
 }
 

@@ -1,5 +1,5 @@
 import { forwardRef, useEffect } from 'react';
-import { Loader2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const Button = forwardRef<
@@ -192,6 +192,133 @@ export function Modal({
         </div>
         {children}
       </div>
+    </div>
+  );
+}
+
+export const PER_PAGE_OPTIONS = [5, 10, 20, 30, 40, 50, 100];
+
+function PagerButton({
+  active,
+  className,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { active?: boolean }) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        'flex h-9 min-w-9 items-center justify-center rounded-lg border px-3 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-40',
+        active
+          ? 'border-indigo-600 bg-indigo-600 text-white'
+          : 'border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800',
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+/** Build a compact page list with ellipses for large ranges (e.g. 1 … 4 5 6 … 20). */
+function buildPageList(current: number, total: number): (number | 'gap')[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  const pages: (number | 'gap')[] = [1];
+  if (current > 4) pages.push('gap');
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (current < total - 3) pages.push('gap');
+  pages.push(total);
+  return pages;
+}
+
+export function Pagination({
+  page,
+  totalPages,
+  onPageChange,
+  perPage,
+  onPerPageChange,
+  perPageOptions = PER_PAGE_OPTIONS,
+  className,
+}: {
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  perPage?: number;
+  onPerPageChange?: (perPage: number) => void;
+  perPageOptions?: number[];
+  className?: string;
+}) {
+  const showPerPage = perPage !== undefined && !!onPerPageChange;
+  if (totalPages <= 1 && !showPerPage) return null;
+
+  const pages = buildPageList(page, Math.max(1, totalPages));
+
+  return (
+    <div
+      className={cn(
+        'flex flex-wrap items-center gap-x-5 gap-y-3',
+        className,
+      )}
+    >
+      <div className="flex items-center gap-1.5">
+        <PagerButton
+          aria-label="Previous page"
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </PagerButton>
+        {pages.map((p, i) =>
+          p === 'gap' ? (
+            <span
+              key={`gap-${i}`}
+              className="px-1 text-sm text-slate-400 dark:text-slate-500"
+            >
+              …
+            </span>
+          ) : (
+            <PagerButton
+              key={p}
+              active={p === page}
+              onClick={() => onPageChange(p)}
+            >
+              {p}
+            </PagerButton>
+          ),
+        )}
+        <PagerButton
+          aria-label="Next page"
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(page + 1)}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </PagerButton>
+      </div>
+
+      <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+        Page {page} of {Math.max(1, totalPages)}
+      </span>
+
+      {showPerPage && (
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-slate-500 dark:text-slate-400">
+            Per page
+          </span>
+          <Select
+            className="py-1.5"
+            value={perPage}
+            onChange={(e) => onPerPageChange!(Number(e.target.value))}
+          >
+            {perPageOptions.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </Select>
+        </div>
+      )}
     </div>
   );
 }

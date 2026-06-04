@@ -1,4 +1,5 @@
 import {
+  ActivityType,
   ProjectStatus,
   TaskPriority,
   TaskStatus,
@@ -77,6 +78,14 @@ export interface WorkloadRow {
   totalTasks: number;
   completedTasks: number;
   pendingTasks: number;
+}
+
+export interface ActivityDto extends BaseDto {
+  type: ActivityType;
+  message: string;
+  actor?: UserDto | null;
+  projectId?: string | null;
+  projectName?: string | null;
 }
 
 export interface ProjectSummaryRow {

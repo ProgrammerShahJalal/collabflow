@@ -19,6 +19,7 @@ import {
   useProjectSummaries,
 } from '@/features/dashboard/dashboard.api';
 import { Badge, Card, EmptyState, Spinner } from '@/components/ui';
+import { ActivityFeed } from '@/features/activities/ActivityFeed';
 import { fromNow } from '@/lib/utils';
 
 export const Route = createFileRoute('/_auth/')({
@@ -95,6 +96,19 @@ function DashboardPage() {
 
         <ProjectSummary />
       </div>
+
+      <Card>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Activity Log</h2>
+          <Link
+            to="/activity"
+            className="text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+          >
+            View all
+          </Link>
+        </div>
+        <ActivityFeed limit={5} />
+      </Card>
     </div>
   );
 }

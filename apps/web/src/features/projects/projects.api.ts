@@ -56,6 +56,7 @@ export function useCreateProject() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['analytics'] });
+      qc.invalidateQueries({ queryKey: ['activities'] });
     },
   });
 }
@@ -82,6 +83,7 @@ export function useDeleteProject() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['analytics'] });
+      qc.invalidateQueries({ queryKey: ['activities'] });
     },
   });
 }
@@ -96,8 +98,10 @@ export function useAddMember(projectId: string) {
       );
       return data;
     },
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: keys.project(projectId) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.project(projectId) });
+      qc.invalidateQueries({ queryKey: ['activities'] });
+    },
   });
 }
 
@@ -107,7 +111,9 @@ export function useRemoveMember(projectId: string) {
     mutationFn: async (userId: string) => {
       await api.delete(`/projects/${projectId}/members/${userId}`);
     },
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: keys.project(projectId) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.project(projectId) });
+      qc.invalidateQueries({ queryKey: ['activities'] });
+    },
   });
 }

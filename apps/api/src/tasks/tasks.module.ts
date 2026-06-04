@@ -5,9 +5,14 @@ import { Project } from '../projects/project.entity';
 import { TasksService } from './tasks.service';
 import { TasksController } from './tasks.controller';
 import { UsersModule } from '../users/users.module';
+import { ActivitiesModule } from '../activities/activities.module';
 
 @Module({
-  imports: [MikroOrmModule.forFeature([Task, Project]), UsersModule],
+  imports: [
+    MikroOrmModule.forFeature([Task, Project]),
+    UsersModule,
+    ActivitiesModule,
+  ],
   providers: [TasksService],
   controllers: [TasksController],
   exports: [TasksService],
