@@ -15,10 +15,23 @@ typed contract package.
 
 ---
 
+## 🎬 Project walkthrough video
+
+> **▶️ Watch the full overview:** **https://youtu.be/uyBatGw_kIs**
+
+A complete tour of CollabFlow — auth & roles, projects, tasks, comments,
+notifications, the activity feed, analytics, and file attachments. Click the
+thumbnail to play:
+
+[![CollabFlow — full project overview (click to watch)](https://img.youtube.com/vi/uyBatGw_kIs/maxresdefault.jpg)](https://youtu.be/uyBatGw_kIs)
+
+---
+
 ## Live demo
 
 | Resource | URL |
 | -------- | --- |
+| 🎬 **Walkthrough video** | https://youtu.be/uyBatGw_kIs |
 | 🌐 **Web app** | https://collabflow-web-sj.vercel.app/ |
 | 📘 **API docs (Swagger)** | https://collabflow-2135.onrender.com/api/docs |
 | 🔌 **API base URL** | https://collabflow-2135.onrender.com/api/v1 |
