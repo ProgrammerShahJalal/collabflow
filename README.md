@@ -11,7 +11,24 @@ typed contract package.
 | Backend  | NestJS 11, MikroORM 6 (MongoDB driver), MongoDB 7 / Atlas        |
 | Auth     | JWT access + rotating refresh token (HttpOnly cookie) + bcryptjs |
 | Shared   | `@collabflow/shared` — enums, types, and API contracts           |
-| Tooling  | pnpm workspaces, Vite 6, Swagger / OpenAPI, Multer uploads       |
+| Tooling  | pnpm workspaces, Vite 6, Swagger / OpenAPI, Multer + Cloudinary  |
+
+---
+
+## Live demo
+
+| Resource | URL |
+| -------- | --- |
+| 🌐 **Web app** | https://collabflow-web-sj.vercel.app/ |
+| 📘 **API docs (Swagger)** | https://collabflow-2135.onrender.com/api/docs |
+| 🔌 **API base URL** | https://collabflow-2135.onrender.com/api/v1 |
+
+Sign in instantly with the built-in demo accounts (one click each on the login
+page) or with the [credentials below](#demo-credentials).
+
+> **Note:** the API is hosted on Render's free tier, so the first request after
+> a period of inactivity may take ~30–60s while the instance cold-starts. The
+> web app is served from Vercel.
 
 ---
 
@@ -112,7 +129,7 @@ is listed below.
 | ------- | ------- |
 | Multipart upload | `POST /uploads` accepts up to 10 files per request (multipart/form-data). |
 | Validation | MIME-allowlisted (images, PDF, Word/Excel/PowerPoint, plain text, CSV, ZIP) and size-capped (`MAX_FILE_SIZE_MB`, default 10 MB). |
-| Storage & serving | Saved to disk with UUID filenames and served statically; URLs attach to tasks. |
+| Cloud storage | Buffered in memory and streamed to **Cloudinary** (folder `collabflow`); the returned secure HTTPS URL, original name, and size attach to tasks. No local disk required — works on ephemeral/serverless hosts. |
 | Web picker | `AttachmentField` multi-file component with de-duplication, existing-attachment removal, and download links. |
 
 ### Web app & UX
@@ -229,8 +246,11 @@ relevant block into `apps/api/.env` and `apps/web/.env`.
 | `JWT_EXPIRES_IN`         | Access-token lifetime                               | `15m`                            |
 | `JWT_REFRESH_EXPIRES_IN` | Refresh-token lifetime                              | `7d`                             |
 | `ALLOWED_ORIGINS`        | Comma-separated CORS allow-list                     | `http://localhost:5173`          |
-| `UPLOAD_DEST`            | Directory for uploaded attachments                  | `./uploads`                      |
 | `MAX_FILE_SIZE_MB`       | Per-file upload size limit                          | `10`                             |
+| `CLOUDINARY_URL`         | Cloudinary connection string (attachment storage)   | `cloudinary://key:secret@cloud`  |
+| `CLOUDINARY_CLOUD_NAME`  | Alternative to `CLOUDINARY_URL` (used if it is unset)| `your-cloud`                     |
+| `CLOUDINARY_API_KEY`     | Alternative to `CLOUDINARY_URL`                      | `123456789012345`                |
+| `CLOUDINARY_API_SECRET`  | Alternative to `CLOUDINARY_URL`                      | `your-api-secret`                |
 | `DEMO_ADMIN_EMAIL`       | Email for the seeded Admin user                     | `admin@collabflow.dev`           |
 | `DEMO_MANAGER_EMAIL`     | Email for the seeded Project Manager user           | `manager@collabflow.dev`         |
 | `DEMO_MEMBER_EMAIL`      | Email for the seeded Team Member user               | `member@collabflow.dev`          |
@@ -266,7 +286,10 @@ You can also use the **Sign up** page to create additional accounts.
 
 ## Deployment
 
-The API and web app deploy independently.
+The API and web app deploy independently. The live demo runs the **API on
+[Render](https://render.com)** and the **web app on [Vercel](https://vercel.com)**,
+with attachments on Cloudinary and the database on MongoDB Atlas — but any
+equivalent Node host / static host works.
 
 ### 1. Build
 
@@ -275,31 +298,40 @@ pnpm install --frozen-lockfile
 pnpm build
 ```
 
-### 2. API (NestJS)
+### 2. API (NestJS) — Render
+
+A ready-to-use [`render.yaml`](render.yaml) blueprint is included. On the Render
+dashboard choose **New → Blueprint**, connect this repo, and Render provisions
+the service from that file (build via corepack + pnpm, health check on
+`/api/docs`, auto-deploy on push). It then prompts for the `sync: false` secrets.
+
+To deploy anywhere else:
 
 - Provide all `apps/api/.env` variables via your host's secret manager.
 - Point `MONGODB_URI` at a production MongoDB (e.g. MongoDB Atlas).
-- Set `NODE_ENV=production` and `ALLOWED_ORIGINS` to your web app's origin.
-- Ensure `UPLOAD_DEST` resolves to writable, persistent storage (a mounted
-  volume) — attachments are written to disk and served statically.
+- Set `NODE_ENV=production` and `ALLOWED_ORIGINS` to your web app's origin
+  (e.g. `https://collabflow-web-sj.vercel.app`).
+- Set `CLOUDINARY_URL` (or the discrete `CLOUDINARY_*` vars) so attachment
+  uploads work. No writable disk is needed — files stream straight to Cloudinary.
 - Start the compiled server:
 
   ```bash
   pnpm --filter @collabflow/api start:prod   # node dist/main.js
   ```
 
-  The API listens on `PORT` and serves routes under `/api/v1`, with Swagger at
-  `/api/docs`.
+  The API binds to `0.0.0.0:$PORT` and serves routes under `/api/v1`, with
+  Swagger at `/api/docs`.
 
-### 3. Web (React SPA)
+### 3. Web (React SPA) — Vercel
 
 - Set `VITE_API_BASE_URL` to the deployed API's `/api/v1` URL at build time
   (Vite inlines `VITE_*` vars during `pnpm build`).
 - `pnpm --filter @collabflow/web build` emits a static bundle to
   `apps/web/dist/`.
-- Serve `apps/web/dist/` from any static host or CDN (Netlify, Vercel, S3 +
-  CloudFront, Nginx). Configure SPA fallback so unknown paths serve
-  `index.html` (required for client-side routing).
+- Serve `apps/web/dist/` from any static host or CDN (Vercel, Netlify, S3 +
+  CloudFront, Nginx). The included [`apps/web/vercel.json`](apps/web/vercel.json)
+  rewrites all paths to `/` so client-side routing works; on other hosts
+  configure the equivalent SPA fallback to `index.html`.
 
 ### Notes
 
