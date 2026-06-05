@@ -289,7 +289,7 @@ export function TaskTable({ tasks }: { tasks: TaskDto[] }) {
             to="/tasks/$id"
             params={{ id: row.original.id }}
             className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             {row.original.title}
           </Link>

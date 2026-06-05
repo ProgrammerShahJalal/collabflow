@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsr generate && tsc --noEmit && vite build",
     "preview": "vite preview",
     "routes": "tsr generate",
     "test": "vitest run"
