@@ -2,11 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { APP_GUARD } from '@nestjs/core';
-import { ServeStaticModule } from '@nestjs/serve-static';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import mikroOrmConfig from './mikro-orm.config';
 import { UploadsModule } from './uploads/uploads.module';
-import { uploadDir } from './uploads/uploads.config';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { Reflector } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
@@ -25,14 +23,6 @@ import { NotificationsModule } from './notifications/notifications.module';
       { name: 'default', ttl: 60_000, limit: 300 },
     ]),
     MikroOrmModule.forRoot(mikroOrmConfig),
-    // Serve uploaded attachments at /uploads/<file>. This sits outside the
-    // global 'api/v1' prefix (which only applies to controllers) and is public
-    // by design — file links open directly in the browser without a Bearer
-    // token, and filenames are unguessable UUIDs.
-    ServeStaticModule.forRoot({
-      rootPath: uploadDir(),
-      serveRoot: '/uploads',
-    }),
     AuthModule,
     UsersModule,
     ProjectsModule,
