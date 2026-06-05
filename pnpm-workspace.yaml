@@ -2,8 +2,11 @@ packages:
   - 'apps/*'
   - 'packages/*'
 
-allowBuilds:
-  '@scarf/scarf': set this to true or false
+# pnpm 11 hard-fails `pnpm install` when a dependency's build script is
+# skipped (ERR_PNPM_IGNORED_BUILDS). The skipped scripts here are non-essential
+# (telemetry/analytics/platform checks), so don't fail the install over them —
+# this keeps CI/Vercel builds green while preserving the trusted allowlist below.
+strictDepBuilds: false
 
 onlyBuiltDependencies:
   - '@nestjs/core'
