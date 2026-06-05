@@ -13,8 +13,8 @@ build/
 *.env
 !.env.example
 
-# Uploads (local file storage)
-uploads/
+# Uploads (local file storage) — runtime dir only, not the src/uploads module
+/apps/api/uploads/
 
 # TanStack Router generated tree
 apps/web/src/routeTree.gen.ts
