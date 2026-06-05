@@ -41,9 +41,10 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = process.env.PORT ? Number(process.env.PORT) : 4000;
-  await app.listen(port);
-  logger.log(`API ready at http://localhost:${port}/api/v1`);
-  logger.log(`Swagger at http://localhost:${port}/api/docs`);
+  // Bind to 0.0.0.0 so cloud hosts (Render/Railway/Fly) can route to the port.
+  await app.listen(port, '0.0.0.0');
+  logger.log(`API ready on port ${port} (prefix /api/v1)`);
+  logger.log(`Swagger at /api/docs`);
 }
 
 bootstrap();
