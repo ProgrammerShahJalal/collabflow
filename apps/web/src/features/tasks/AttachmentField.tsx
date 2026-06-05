@@ -1,16 +1,25 @@
-import { useId, useRef } from 'react';
+import { useEffect, useId, useMemo, useRef } from 'react';
 import { Paperclip, X } from 'lucide-react';
 import { Label } from '@/components/ui';
+import {
+  attachmentKind,
+  fileNameFromUrl,
+  thumbnailUrl,
+} from './attachment-utils';
 
 const ACCEPT =
   'image/png,image/jpeg,image/gif,image/webp,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip';
 
-function fileNameFromUrl(url: string): string {
-  try {
-    return decodeURIComponent(url.split('/').pop() ?? url);
-  } catch {
-    return url.split('/').pop() ?? url;
-  }
+/** A small thumbnail for image attachments; null for non-image types. */
+function Thumb({ src, alt }: { src: string; alt: string }) {
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className="h-8 w-8 shrink-0 rounded object-cover"
+      loading="lazy"
+    />
+  );
 }
 
 /**
@@ -33,6 +42,19 @@ export function AttachmentField({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
+
+  // Object URLs for previewing freshly-selected image files; revoked on change.
+  const previews = useMemo(() => {
+    const map = new Map<File, string>();
+    for (const f of files) {
+      if (f.type.startsWith('image/')) map.set(f, URL.createObjectURL(f));
+    }
+    return map;
+  }, [files]);
+  useEffect(
+    () => () => previews.forEach((url) => URL.revokeObjectURL(url)),
+    [previews],
+  );
 
   const addFiles = (incoming: FileList | null) => {
     if (!incoming?.length) return;
@@ -71,7 +93,11 @@ export function AttachmentField({
               key={url}
               className="flex items-center gap-2 rounded-md bg-slate-50 px-2 py-1 text-sm dark:bg-slate-800/60"
             >
-              <Paperclip className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              {attachmentKind(url) === 'image' || attachmentKind(url) === 'pdf' ? (
+                <Thumb src={thumbnailUrl(url, 96)} alt={fileNameFromUrl(url)} />
+              ) : (
+                <Paperclip className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              )}
               <a
                 href={url}
                 target="_blank"
@@ -98,7 +124,11 @@ export function AttachmentField({
               key={`${file.name}:${file.size}:${i}`}
               className="flex items-center gap-2 rounded-md bg-indigo-50 px-2 py-1 text-sm dark:bg-indigo-950/40"
             >
-              <Paperclip className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
+              {previews.has(file) ? (
+                <Thumb src={previews.get(file)!} alt={file.name} />
+              ) : (
+                <Paperclip className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
+              )}
               <span className="flex-1 truncate text-slate-700 dark:text-slate-200">
                 {file.name}
               </span>

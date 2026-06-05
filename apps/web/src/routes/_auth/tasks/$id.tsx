@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Paperclip } from 'lucide-react';
 import { useTask, useUpdateTask } from '@/features/tasks/tasks.api';
+import { AttachmentGallery } from '@/features/tasks/AttachmentGallery';
 import { CommentSection } from '@/features/comments/CommentSection';
 import { useAuthStore } from '@/stores/auth.store';
 import { apiErrorMessage } from '@/lib/api';
@@ -71,19 +72,7 @@ function TaskDetailPage() {
           <h2 className="mb-2 mt-6 flex items-center gap-2 text-sm font-semibold uppercase text-slate-400">
             <Paperclip className="h-4 w-4" /> Attachments
           </h2>
-          {task.attachments.length ? (
-            <ul className="space-y-1 text-sm text-indigo-600">
-              {task.attachments.map((a) => (
-                <li key={a}>
-                  <a href={a} target="_blank" rel="noreferrer" className="hover:underline">
-                    {a.split('/').pop()}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-slate-400">No attachments.</p>
-          )}
+          <AttachmentGallery urls={task.attachments} />
         </Card>
 
         <Card>
