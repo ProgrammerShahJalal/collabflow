@@ -145,7 +145,7 @@ export class TasksService {
         projectId: project.id,
         task: presentTask(task),
       });
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`Failed to emit task_created event: ${error.message}`);
     }
 
@@ -285,7 +285,7 @@ export class TasksService {
           projectId: task.project.id,
           task: presentTask(task),
         });
-      } catch (error) {
+      } catch (error: any) {
         this.logger.error(`Failed to emit task_updated event: ${error.message}`);
       }
     }
