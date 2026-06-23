@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { Bell, CheckCheck } from 'lucide-react';
 import type { NotificationDto } from '@collabflow/shared';
 import { Button } from './ui';
-import { fromNow } from '@/lib/utils';
+import { cn, fromNow } from '@/lib/utils';
 import {
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
@@ -16,8 +16,8 @@ export function NotificationBell() {
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  const { data: unread = 0 } = useUnreadCount();
-  const { data, isLoading } = useNotifications();
+  const { data: unread = 0, refetch: refetchUnread } = useUnreadCount();
+  const { data, isLoading, refetch: refetchNotifications } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
 
@@ -51,7 +51,14 @@ export function NotificationBell() {
     <div ref={ref} className="relative">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          const nextOpen = !open;
+          setOpen(nextOpen);
+          if (nextOpen) {
+            refetchUnread();
+            refetchNotifications();
+          }
+        }}
         aria-label="Notifications"
         className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
       >
@@ -71,12 +78,12 @@ export function NotificationBell() {
             </span>
             {unread > 0 && (
               <Button
-                variant="ghost"
-                className="px-2 py-1 text-xs"
+                variant="outline"
+                className="h-7 px-2 text-[11px] font-semibold uppercase tracking-wider"
                 onClick={() => markAllRead.mutate()}
                 loading={markAllRead.isPending}
               >
-                <CheckCheck className="h-3.5 w-3.5" /> Mark all read
+                <CheckCheck className="h-3 w-3" /> Mark all read
               </Button>
             )}
           </div>
@@ -93,25 +100,38 @@ export function NotificationBell() {
             ) : (
               <ul>
                 {notifications.map((n) => (
-                  <li key={n.id}>
+                  <li
+                    key={n.id}
+                    className={cn(
+                      'border-b border-slate-50 last:border-0 dark:border-slate-800/50',
+                      !n.read && 'bg-indigo-50/40 dark:bg-indigo-500/5',
+                    )}
+                  >
                     <button
                       type="button"
                       onClick={() => onItemClick(n)}
-                      className="flex w-full items-start gap-2 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800"
+                      className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
                     >
-                      {!n.read && (
-                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-indigo-500" />
-                      )}
-                      <span
-                        className={n.read ? 'min-w-0 flex-1 pl-4' : 'min-w-0 flex-1'}
-                      >
-                        <span className="block text-sm text-slate-700 dark:text-slate-200">
+                      <div className="mt-1.5 flex h-2 w-2 shrink-0 items-center justify-center">
+                        {!n.read && (
+                          <span className="h-2 w-2 rounded-full bg-indigo-500" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={cn(
+                            'text-sm leading-snug',
+                            n.read
+                              ? 'text-slate-500 dark:text-slate-400'
+                              : 'font-medium text-slate-900 dark:text-slate-100',
+                          )}
+                        >
                           {n.message}
-                        </span>
-                        <span className="block text-xs text-slate-400">
+                        </p>
+                        <p className="mt-1 text-xs text-slate-400">
                           {fromNow(n.createdAt)}
-                        </span>
-                      </span>
+                        </p>
+                      </div>
                     </button>
                   </li>
                 ))}

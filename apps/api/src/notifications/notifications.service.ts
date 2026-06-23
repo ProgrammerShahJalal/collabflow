@@ -66,13 +66,13 @@ export class NotificationsService {
             'notification',
             presentNotification(notification),
           );
-        } catch (error) {
+        } catch (error: any) {
           this.logger.error(
             `Failed to emit real-time notification to user ${notification.recipient.id}: ${error.message}`,
           );
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       // Notifications are best-effort and must not surface to the caller.
       this.logger.error(`Failed to dispatch notifications: ${error.message}`);
     }
