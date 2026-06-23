@@ -146,7 +146,7 @@ export class TasksService {
         task: presentTask(task),
       });
     } catch (error) {
-      this.logger.error(`Failed to emit task_created event: ${error.message}`);
+      this.logger.error(`Failed to emit task_created event: ${error instanceof Error ? error : undefined}`);
     }
 
     return task;
@@ -286,7 +286,7 @@ export class TasksService {
           task: presentTask(task),
         });
       } catch (error) {
-        this.logger.error(`Failed to emit task_updated event: ${error.message}`);
+        this.logger.error(`Failed to emit task_updated event: ${error instanceof Error ? error : undefined}`);
       }
     }
 

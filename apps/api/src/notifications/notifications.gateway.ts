@@ -19,7 +19,7 @@ export class NotificationsGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   private readonly logger = new Logger(NotificationsGateway.name);
 
@@ -55,7 +55,7 @@ export class NotificationsGateway
 
       this.logger.log(`Client connected: ${client.id} (User: ${userId}) joined room user:${userId}`);
     } catch (error) {
-      this.logger.error(`Connection error: ${error.message}`);
+      this.logger.error(`Connection error: ${error instanceof Error ? error : undefined}`);
       client.disconnect();
     }
   }
