@@ -1,6 +1,7 @@
 import {
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { EntityManager, EntityRepository } from '@mikro-orm/mongodb';
@@ -15,9 +16,13 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/notification.entity';
 import { CommentQueryDto, CreateCommentDto, UpdateCommentDto } from './dto/comment.dto';
 import { paginate } from '../common/dto/pagination.dto';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
+import { presentComment } from '../common/serializers/presenters';
 
 @Injectable()
 export class CommentsService {
+  private readonly logger = new Logger(CommentsService.name);
+
   constructor(
     @InjectRepository(Comment)
     private readonly repo: EntityRepository<Comment>,
@@ -25,6 +30,7 @@ export class CommentsService {
     private readonly tasksService: TasksService,
     private readonly activities: ActivitiesService,
     private readonly notifications: NotificationsService,
+    private readonly gateway: NotificationsGateway,
   ) {}
 
   private isElevated(user: User): boolean {
@@ -64,6 +70,18 @@ export class CommentsService {
       actor: user,
       taskId: task.id,
     });
+
+    // Real-time update for the task's comment section
+    try {
+      const recipients = await this.resolveRecipients(task, user);
+      const recipientIds = recipients.map((r) => r.id);
+      this.gateway.sendToMultipleUsers(recipientIds, 'comment_added', {
+        taskId: task.id,
+        comment: presentComment(comment),
+      });
+    } catch (error) {
+      this.logger.error(`Failed to emit real-time comment: ${error.message}`);
+    }
 
     return comment;
   }

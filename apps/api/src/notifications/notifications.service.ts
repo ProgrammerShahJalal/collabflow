@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { EntityManager, EntityRepository } from '@mikro-orm/mongodb';
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { Notification, NotificationType } from './notification.entity';
 import { User } from '../users/user.entity';
 import { NotificationQueryDto } from './dto/notification.dto';
 import { paginate } from '../common/dto/pagination.dto';
+import { NotificationsGateway } from './notifications.gateway';
+import { presentNotification } from '../common/serializers/presenters';
 
 export interface DispatchNotificationInput {
   type: NotificationType;
@@ -17,10 +19,13 @@ export interface DispatchNotificationInput {
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
   constructor(
     @InjectRepository(Notification)
     private readonly repo: EntityRepository<Notification>,
     private readonly em: EntityManager,
+    private readonly gateway: NotificationsGateway,
   ) {}
 
   /**
@@ -31,6 +36,8 @@ export class NotificationsService {
   async dispatch(input: DispatchNotificationInput): Promise<void> {
     try {
       const seen = new Set<string>();
+      const createdNotifications: Notification[] = [];
+
       for (const recipient of input.recipients) {
         if (!recipient || seen.has(recipient.id)) continue;
         seen.add(recipient.id);
@@ -43,10 +50,31 @@ export class NotificationsService {
           read: false,
         });
         this.em.persist(notification);
+        createdNotifications.push(notification);
       }
       await this.em.flush();
-    } catch {
+
+      // Emit real-time notifications via WebSocket
+      if (createdNotifications.length > 0) {
+        await this.em.populate(createdNotifications, ['actor']);
+      }
+
+      for (const notification of createdNotifications) {
+        try {
+          this.gateway.sendToUser(
+            notification.recipient.id,
+            'notification',
+            presentNotification(notification),
+          );
+        } catch (error) {
+          this.logger.error(
+            `Failed to emit real-time notification to user ${notification.recipient.id}: ${error.message}`,
+          );
+        }
+      }
+    } catch (error) {
       // Notifications are best-effort and must not surface to the caller.
+      this.logger.error(`Failed to dispatch notifications: ${error.message}`);
     }
   }
 

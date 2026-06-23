@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   useMutation,
   useQuery,
@@ -6,6 +7,7 @@ import {
 import type { Paginated, TaskDto } from '@collabflow/shared';
 import { api } from '@/lib/api';
 import { keys } from '@/lib/query-keys';
+import { socketService } from '@/lib/socket';
 
 export interface TaskFilters {
   projectId?: string;
@@ -21,6 +23,34 @@ export interface TaskFilters {
 }
 
 export function useTasks(filters: TaskFilters = {}) {
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    let mounted = true;
+    const handleTaskCreated = (data: { projectId: string; task: TaskDto }) => {
+      if (!mounted) return;
+      if (!filters.projectId || filters.projectId === data.projectId) {
+        qc.invalidateQueries({ queryKey: keys.tasks(filters) });
+      }
+    };
+
+    const handleTaskUpdated = (data: { projectId: string; task: TaskDto }) => {
+      if (!mounted) return;
+      if (!filters.projectId || filters.projectId === data.projectId) {
+        qc.invalidateQueries({ queryKey: keys.tasks(filters) });
+      }
+    };
+
+    socketService.on('task_created', handleTaskCreated);
+    socketService.on('task_updated', handleTaskUpdated);
+
+    return () => {
+      mounted = false;
+      socketService.off('task_created', handleTaskCreated);
+      socketService.off('task_updated', handleTaskUpdated);
+    };
+  }, [qc, JSON.stringify(filters)]);
+
   return useQuery({
     queryKey: keys.tasks(filters),
     queryFn: async () => {
@@ -33,6 +63,25 @@ export function useTasks(filters: TaskFilters = {}) {
 }
 
 export function useTask(id: string) {
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    let mounted = true;
+    const handleTaskUpdated = (data: { projectId: string; task: TaskDto }) => {
+      if (!mounted) return;
+      if (data.task.id === id) {
+        qc.setQueryData(keys.task(id), data.task);
+      }
+    };
+
+    socketService.on('task_updated', handleTaskUpdated);
+
+    return () => {
+      mounted = false;
+      socketService.off('task_updated', handleTaskUpdated);
+    };
+  }, [qc, id]);
+
   return useQuery({
     queryKey: keys.task(id),
     enabled: !!id,

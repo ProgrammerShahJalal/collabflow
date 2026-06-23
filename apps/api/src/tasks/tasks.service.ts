@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
@@ -22,6 +23,8 @@ import {
 import { paginate } from '../common/dto/pagination.dto';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/activity.entity';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
+import { presentTask } from '../common/serializers/presenters';
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   [TaskStatus.TODO]: 'To Do',
@@ -39,6 +42,8 @@ const SORTABLE = new Set([
 
 @Injectable()
 export class TasksService {
+  private readonly logger = new Logger(TasksService.name);
+
   constructor(
     @InjectRepository(Task)
     private readonly repo: EntityRepository<Task>,
@@ -47,6 +52,7 @@ export class TasksService {
     private readonly em: EntityManager,
     private readonly usersService: UsersService,
     private readonly activities: ActivitiesService,
+    private readonly gateway: NotificationsGateway,
   ) {}
 
   private isElevated(user: User): boolean {
@@ -129,6 +135,19 @@ export class TasksService {
       actor: user,
       project,
     });
+
+    // Notify project members about new task
+    try {
+      await this.em.populate(project, ['members']);
+      const projectMembers = project.members.getItems();
+      const memberIds = projectMembers.map((m) => m.id);
+      this.gateway.sendToMultipleUsers(memberIds, 'task_created', {
+        projectId: project.id,
+        task: presentTask(task),
+      });
+    } catch (error) {
+      this.logger.error(`Failed to emit task_created event: ${error.message}`);
+    }
 
     return task;
   }
@@ -256,6 +275,21 @@ export class TasksService {
     await this.em.flush();
     await this.em.populate(task, ['assignee', 'project', 'createdBy']);
 
+    const newAssigneeId = task.assignee?.id ?? null;
+    if (task.status !== prevStatus || newAssigneeId !== prevAssigneeId) {
+      try {
+        await this.em.populate(task.project, ['members']);
+        const projectMembers = task.project.members.getItems();
+        const memberIds = projectMembers.map((m) => m.id);
+        this.gateway.sendToMultipleUsers(memberIds, 'task_updated', {
+          projectId: task.project.id,
+          task: presentTask(task),
+        });
+      } catch (error) {
+        this.logger.error(`Failed to emit task_updated event: ${error.message}`);
+      }
+    }
+
     if (task.status !== prevStatus) {
       await this.activities.record({
         type: ActivityType.TASK_STATUS_CHANGED,
@@ -265,7 +299,6 @@ export class TasksService {
       });
     }
 
-    const newAssigneeId = task.assignee?.id ?? null;
     if (newAssigneeId !== prevAssigneeId) {
       await this.activities.record({
         type: ActivityType.TASK_ASSIGNED,
