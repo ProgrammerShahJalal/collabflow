@@ -1,11 +1,14 @@
+import { useEffect } from 'react';
 import {
   useMutation,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import type { NotificationDto, Paginated } from '@collabflow/shared';
 import { api } from '@/lib/api';
 import { keys } from '@/lib/query-keys';
+import { socketService } from '@/lib/socket';
 
 export function useNotifications() {
   return useQuery({
@@ -21,10 +24,31 @@ export function useNotifications() {
 }
 
 export function useUnreadCount() {
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    let mounted = true;
+    const handleNotification = (notification: NotificationDto) => {
+      if (!mounted) return;
+      // Update unread count
+      qc.setQueryData(keys.notificationsUnread(), (old: number | undefined) => (old ?? 0) + 1);
+      // Update notifications list if cached
+      qc.invalidateQueries({ queryKey: keys.notifications() });
+      // Show toast
+      toast.success(notification.message);
+    };
+
+    socketService.on('notification', handleNotification);
+    return () => {
+      mounted = false;
+      socketService.off('notification', handleNotification);
+    };
+  }, [qc]);
+
   return useQuery({
     queryKey: keys.notificationsUnread(),
-    // Poll so the badge stays roughly live without a websocket layer.
-    refetchInterval: 30_000,
+    // Polling kept as fallback but at a longer interval
+    refetchInterval: 60_000,
     refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data } = await api.get<{ count: number }>(

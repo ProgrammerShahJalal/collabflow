@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import {
   LayoutDashboard,
@@ -14,6 +15,7 @@ import { UserRole } from '@collabflow/shared';
 import { useThemeStore } from '@/stores/theme.store';
 import { useAuthStore } from '@/stores/auth.store';
 import { useLogout } from '@/features/auth/auth.api';
+import { socketService } from '@/lib/socket';
 import { Button } from './ui';
 import { NotificationBell } from './NotificationBell';
 
@@ -29,8 +31,18 @@ const NAV = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { theme, toggle } = useThemeStore();
   const user = useAuthStore((s) => s.user);
+  const accessToken = useAuthStore((s) => s.accessToken);
   const logout = useLogout();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (accessToken) {
+      socketService.connect(accessToken);
+    }
+    return () => {
+      socketService.disconnect();
+    };
+  }, [accessToken]);
 
   const handleLogout = async () => {
     await logout.mutateAsync();

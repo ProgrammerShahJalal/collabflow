@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   useMutation,
   useQuery,
@@ -6,8 +7,28 @@ import {
 import type { CommentDto, Paginated } from '@collabflow/shared';
 import { api } from '@/lib/api';
 import { keys } from '@/lib/query-keys';
+import { socketService } from '@/lib/socket';
 
 export function useTaskComments(taskId: string) {
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    let mounted = true;
+    const handleCommentAdded = (data: { taskId: string; comment: CommentDto }) => {
+      if (!mounted) return;
+      if (data.taskId === taskId) {
+        qc.invalidateQueries({ queryKey: keys.comments(taskId) });
+      }
+    };
+
+    socketService.on('comment_added', handleCommentAdded);
+
+    return () => {
+      mounted = false;
+      socketService.off('comment_added', handleCommentAdded);
+    };
+  }, [qc, taskId]);
+
   return useQuery({
     queryKey: keys.comments(taskId),
     enabled: !!taskId,

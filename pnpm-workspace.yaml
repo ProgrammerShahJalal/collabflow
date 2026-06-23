@@ -12,3 +12,8 @@ onlyBuiltDependencies:
   - '@nestjs/core'
   - '@scarf/scarf'
   - esbuild
+
+allowBuilds:
+  '@nestjs/core': true
+  '@scarf/scarf': true
+  esbuild: true
