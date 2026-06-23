@@ -68,13 +68,13 @@ export class NotificationsService {
           );
         } catch (error: any) {
           this.logger.error(
-            `Failed to emit real-time notification to user ${notification.recipient.id}: ${error.message}`,
+            `Failed to emit real-time notification to user ${notification.recipient.id}: ${error instanceof Error ? error : undefined}`,
           );
         }
       }
     } catch (error: any) {
       // Notifications are best-effort and must not surface to the caller.
-      this.logger.error(`Failed to dispatch notifications: ${error.message}`);
+      this.logger.error(`Failed to dispatch notifications: ${error instanceof Error ? error : undefined}`);
     }
   }
 

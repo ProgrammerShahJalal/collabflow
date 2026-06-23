@@ -79,8 +79,8 @@ export class CommentsService {
         taskId: task.id,
         comment: presentComment(comment),
       });
-    } catch (error: any) {
-      this.logger.error(`Failed to emit real-time comment: ${error.message}`);
+    } catch (error) {
+      this.logger.error(`Failed to emit real-time comment: ${error instanceof Error ? error : undefined}`);
     }
 
     return comment;

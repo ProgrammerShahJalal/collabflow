@@ -54,8 +54,8 @@ export class NotificationsGateway
       await client.join(`user:${userId}`);
 
       this.logger.log(`Client connected: ${client.id} (User: ${userId}) joined room user:${userId}`);
-    } catch (error: any) {
-      this.logger.error(`Connection error: ${error.message}`);
+    } catch (error) {
+      this.logger.error(`Connection error: ${error instanceof Error ? error : undefined}`);
       client.disconnect();
     }
   }
