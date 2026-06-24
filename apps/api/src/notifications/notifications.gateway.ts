@@ -8,7 +8,9 @@ import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
+import { CreateRequestContext, EntityManager, MikroORM } from '@mikro-orm/mongodb';
 import { UsersService } from '../users/users.service';
+import { Project } from '../projects/project.entity';
 
 @WebSocketGateway({
   cors: {
@@ -27,8 +29,11 @@ export class NotificationsGateway
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly usersService: UsersService,
+    private readonly em: EntityManager,
+    private readonly orm: MikroORM,
   ) {}
 
+  @CreateRequestContext()
   async handleConnection(client: Socket) {
     try {
       const token = client.handshake.auth.token || client.handshake.headers.authorization?.split(' ')[1];
@@ -53,7 +58,18 @@ export class NotificationsGateway
       // Join a room named after the user ID
       await client.join(`user:${userId}`);
 
-      this.logger.log(`Client connected: ${client.id} (User: ${userId}) joined room user:${userId}`);
+      // Join rooms for all projects the user is a member of
+      const userProjects = await this.em.find(Project, {
+        members: user._id,
+      });
+
+      for (const project of userProjects) {
+        await client.join(`project:${project.id}`);
+      }
+
+      this.logger.log(
+        `Client connected: ${client.id} (User: ${userId}) joined room user:${userId} and ${userProjects.length} project rooms`,
+      );
     } catch (error) {
       this.logger.error(`Connection error: ${error instanceof Error ? error : undefined}`);
       client.disconnect();
@@ -75,5 +91,9 @@ export class NotificationsGateway
     userIds.forEach((userId) => {
       this.sendToUser(userId, event, data);
     });
+  }
+
+  sendToProject(projectId: string, event: string, data: any) {
+    this.server.to(`project:${projectId}`).emit(event, data);
   }
 }
