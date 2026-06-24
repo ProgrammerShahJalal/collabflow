@@ -27,6 +27,10 @@ thumbnail to play:
 
 ---
 
+[View CollabFlow Case Study](https://shah-jalal.dev/case-study/collabflow)
+
+---
+
 ## Live demo
 
 | Resource | URL |
