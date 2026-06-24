@@ -24,6 +24,8 @@ import { paginate } from '../common/dto/pagination.dto';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/activity.entity';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/notification.entity';
 import { presentTask } from '../common/serializers/presenters';
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
@@ -52,6 +54,7 @@ export class TasksService {
     private readonly em: EntityManager,
     private readonly usersService: UsersService,
     private readonly activities: ActivitiesService,
+    private readonly notifications: NotificationsService,
     private readonly gateway: NotificationsGateway,
   ) {}
 
@@ -138,10 +141,7 @@ export class TasksService {
 
     // Notify project members about new task
     try {
-      await this.em.populate(project, ['members']);
-      const projectMembers = project.members.getItems();
-      const memberIds = projectMembers.map((m) => m.id);
-      this.gateway.sendToMultipleUsers(memberIds, 'task_created', {
+      this.gateway.sendToProject(project.id, 'task_created', {
         projectId: project.id,
         task: presentTask(task),
       });
@@ -276,18 +276,17 @@ export class TasksService {
     await this.em.populate(task, ['assignee', 'project', 'createdBy']);
 
     const newAssigneeId = task.assignee?.id ?? null;
-    if (task.status !== prevStatus || newAssigneeId !== prevAssigneeId) {
-      try {
-        await this.em.populate(task.project, ['members']);
-        const projectMembers = task.project.members.getItems();
-        const memberIds = projectMembers.map((m) => m.id);
-        this.gateway.sendToMultipleUsers(memberIds, 'task_updated', {
-          projectId: task.project.id,
-          task: presentTask(task),
-        });
-      } catch (error) {
-        this.logger.error(`Failed to emit task_updated event: ${error instanceof Error ? error : undefined}`);
-      }
+
+    // Real-time update for project members
+    try {
+      this.gateway.sendToProject(task.project.id, 'task_updated', {
+        projectId: task.project.id,
+        task: presentTask(task),
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit task_updated event: ${error instanceof Error ? error : undefined}`,
+      );
     }
 
     if (task.status !== prevStatus) {
@@ -308,6 +307,31 @@ export class TasksService {
         actor: user,
         project: task.project,
       });
+
+      if (task.assignee && task.assignee.id !== user.id) {
+        // Notify assignee about the new assignment
+        await this.notifications.dispatch({
+          type: NotificationType.TASK_ASSIGNED,
+          message: `${user.name} assigned task "${task.title}" to you`,
+          recipients: [task.assignee],
+          actor: user,
+          taskId: task.id,
+        });
+      }
+    } else if (task.status !== prevStatus || dto.title !== undefined || dto.description !== undefined) {
+      // For other updates, notify all project members
+      await this.em.populate(task.project, ['members']);
+      const members = task.project.members.getItems().filter(m => m.id !== user.id);
+
+      if (members.length > 0) {
+        await this.notifications.dispatch({
+          type: NotificationType.TASK_UPDATED,
+          message: `${user.name} updated task "${task.title}"`,
+          recipients: members,
+          actor: user,
+          taskId: task.id,
+        });
+      }
     }
 
     return task;
@@ -324,6 +348,18 @@ export class TasksService {
     task.status = status;
     await this.em.flush();
     await this.em.populate(task, ['assignee', 'project', 'createdBy']);
+
+    // Real-time update for project members
+    try {
+      this.gateway.sendToProject(task.project.id, 'task_updated', {
+        projectId: task.project.id,
+        task: presentTask(task),
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit task_updated event: ${error instanceof Error ? error : undefined}`,
+      );
+    }
 
     if (task.status !== prevStatus) {
       await this.activities.record({

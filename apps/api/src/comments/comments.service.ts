@@ -73,9 +73,7 @@ export class CommentsService {
 
     // Real-time update for the task's comment section
     try {
-      const recipients = await this.resolveRecipients(task, user);
-      const recipientIds = recipients.map((r) => r.id);
-      this.gateway.sendToMultipleUsers(recipientIds, 'comment_added', {
+      this.gateway.sendToProject(task.project.id, 'comment_added', {
         taskId: task.id,
         comment: presentComment(comment),
       });
@@ -87,23 +85,13 @@ export class CommentsService {
   }
 
   /**
-   * Recipients of a new comment: the task assignee, the task creator, and every
-   * prior commenter — excluding the person who just commented.
+   * Recipients of a new comment: all project members excluding the person who just commented.
    */
   private async resolveRecipients(task: Task, author: User): Promise<User[]> {
-    const recipients: User[] = [];
-    if (task.assignee) recipients.push(task.assignee);
-    if (task.createdBy) recipients.push(task.createdBy);
+    await this.em.populate(task.project, ['members']);
+    const projectMembers = task.project.members.getItems();
 
-    const priorComments = await this.repo.find(
-      { task: task._id },
-      { populate: ['author'] },
-    );
-    for (const c of priorComments) {
-      if (c.author) recipients.push(c.author);
-    }
-
-    return recipients.filter((u) => u.id !== author.id);
+    return projectMembers.filter((u) => u.id !== author.id);
   }
 
   async findByTask(taskId: string, query: CommentQueryDto, user: User) {
