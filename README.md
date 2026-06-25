@@ -15,7 +15,19 @@ typed contract package.
 
 ---
 
-## 🎬 Project walkthrough video
+## 🎬 Project walkthrough video (short 1:09 and in English)
+
+> **▶️ Watch the full overview:** **https://youtu.be/N2ZV88jq5CM**
+
+A complete tour of CollabFlow — auth & roles, projects, tasks, comments,
+notifications, the activity feed, analytics, and file attachments. Click the
+thumbnail to play:
+
+[![CollabFlow — full project overview (click to watch)](https://img.youtube.com/vi/N2ZV88jq5CM/maxresdefault.jpg)](https://youtu.be/N2ZV88jq5CM)
+
+---
+
+## 🎬 Project walkthrough video (details in Bangla)
 
 > **▶️ Watch the full overview:** **https://youtu.be/uyBatGw_kIs**
 
